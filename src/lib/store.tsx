@@ -18,8 +18,8 @@ const initialCourts: Court[] = [
 ];
 
 const initialBookings: Booking[] = [
-  { id: '1', courtId: '1', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], time: '10:00 AM', status: 'approved' },
-  { id: '2', courtId: '2', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split('T')[0], time: '2:00 PM', status: 'pending' },
+  { id: '1', courtId: '1', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], time: '9:00 AM - 10:00 AM', status: 'approved' },
+  { id: '2', courtId: '2', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split('T')[0], time: '2:00 PM - 3:00 PM', status: 'pending' },
 ];
 
 // --- STATE AND ACTIONS ---
@@ -54,7 +54,7 @@ const appReducer = (state: AppState, action: Action): AppState => {
     case 'LOGIN':
       return { ...state, user: action.payload };
     case 'LOGOUT':
-      return { ...state, user: null, users: initialUsers, courts: initialCourts, bookings: initialBookings };
+      return { ...state, user: null };
     case 'ADD_USER':
       return { ...state, users: [...state.users, action.payload] };
     case 'ADD_COURT':
@@ -98,10 +98,14 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       if (storedState) {
           const parsedState = JSON.parse(storedState);
           dispatch({ type: 'SET_INITIAL_STATE', payload: parsedState });
+      } else {
+        // If no state in local storage, set the initial state
+        dispatch({ type: 'SET_INITIAL_STATE', payload: initialState });
       }
     } catch (error) {
         console.error("Failed to parse state from localStorage", error);
-        // If parsing fails, we'll just use the initial state.
+        // If parsing fails, use the initial state.
+        dispatch({ type: 'SET_INITIAL_STATE', payload: initialState });
     }
     setIsInitialized(true);
   }, []);
@@ -120,7 +124,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
             console.error("Failed to save state to localStorage", error);
         }
     }
-  }, [state, isInitialized]);
+  }, [isInitialized, state.user, state.users, state.courts, state.bookings]);
 
 
   const login = (email: string, role: 'admin' | 'user') => {
@@ -134,8 +138,9 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     dispatch({ type: 'LOGOUT' });
-    // Also clear from local storage
+    // Also clear from local storage and reset to initial state for next login
     localStorage.removeItem('courtSyncState');
+    dispatch({ type: 'SET_INITIAL_STATE', payload: initialState });
   };
   
   const addUser = (user: Omit<User, 'id'>) => {
