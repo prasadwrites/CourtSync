@@ -20,7 +20,20 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
-const timeSlots = Array.from({ length: 12 }, (_, i) => `${i + 9}:00 ${i + 9 < 12 ? 'AM' : 'PM'}`);
+const timeSlots = Array.from({ length: 12 }, (_, i) => {
+    const startHour = i + 9;
+    const endHour = startHour + 1;
+    const formatHour = (hour: number) => {
+        const h = hour % 12 === 0 ? 12 : hour % 12;
+        const ampm = hour < 12 || hour === 24 ? 'AM' : 'PM';
+        return `${h}:00 ${ampm}`;
+    };
+    return {
+        startTime: formatHour(startHour).replace(' 12', '12'),
+        display: `${formatHour(startHour)} - ${formatHour(endHour)}`
+    }
+});
+
 
 export default function CourtDetailPage() {
   const { courts, bookings, user, addBooking } = useStore();
@@ -49,7 +62,7 @@ export default function CourtDetailPage() {
   const selectedDateString = date ? format(date, 'yyyy-MM-dd') : '';
 
   const bookedSlots = bookings
-    .filter((b) => b.courtId === court.id && b.date === selectedDateString && b.status === 'approved')
+    .filter((b) => b.courtId === court.id && b.date === selectedDateString && (b.status === 'approved' || b.status === 'pending'))
     .map((b) => b.time);
 
   const handleTimeSelect = (time: string) => {
@@ -72,6 +85,14 @@ export default function CourtDetailPage() {
     }
     setConfirmOpen(false);
     setSelectedTime(null);
+  }
+
+  const getSlotVariant = (time: string) => {
+    const booking = bookings.find(b => b.courtId === court.id && b.date === selectedDateString && b.time === time);
+    if (!booking) return "outline";
+    if (booking.status === 'approved') return 'destructive';
+    if (booking.status === 'pending') return 'secondary';
+    return 'outline';
   }
 
   return (
@@ -116,18 +137,18 @@ export default function CourtDetailPage() {
             </CardHeader>
             <CardContent>
                 {date ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {timeSlots.map(time => {
-                            const isBooked = bookedSlots.includes(time);
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {timeSlots.map(slot => {
+                            const isBooked = bookedSlots.includes(slot.startTime);
                             return (
                                 <Button 
-                                    key={time} 
-                                    variant={isBooked ? "secondary" : "outline"}
+                                    key={slot.startTime} 
+                                    variant={getSlotVariant(slot.startTime)}
                                     disabled={isBooked}
-                                    onClick={() => handleTimeSelect(time)}
+                                    onClick={() => handleTimeSelect(slot.startTime)}
                                 >
                                     <Clock className="mr-2 h-4 w-4"/>
-                                    {time}
+                                    {slot.display}
                                 </Button>
                             )
                         })}
@@ -150,7 +171,7 @@ export default function CourtDetailPage() {
             <div className="space-y-2">
                 <p><span className="font-semibold">Court:</span> {court.name}</p>
                 <p><span className="font-semibold">Date:</span> {date && format(date, 'PPP')}</p>
-                <p><span className="font-semibold">Time:</span> {selectedTime}</p>
+                <p><span className="font-semibold">Time:</span> {selectedTime && timeSlots.find(s => s.startTime === selectedTime)?.display}</p>
             </div>
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
