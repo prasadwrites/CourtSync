@@ -40,8 +40,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const superAdminMenuItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/companies', label: 'Company Management', icon: Building },
-    { href: '/admin/manage-users', label: 'Manage Users', icon: Users },
-    { href: '/admin/manage-courts', label: 'Manage Courts', icon: Shield },
   ];
 
   const companyAdminMenuItems = [
