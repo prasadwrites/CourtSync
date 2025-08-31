@@ -190,22 +190,30 @@ export default function ManageUsersPage() {
           <CardDescription>Choose a company to view and manage its users.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <div className="max-w-sm">
-                <Select onValueChange={setSelectedCompanyId} value={selectedCompanyId || ''}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a company..." />
-                </SelectTrigger>
-                <SelectContent>
-                    {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                        <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            {company.name}
-                        </div>
-                    </SelectItem>
-                    ))}
-                </SelectContent>
-                </Select>
+            <div className="flex items-center gap-4">
+                <div className="max-w-sm w-full">
+                    <Select onValueChange={setSelectedCompanyId} value={selectedCompanyId || ''}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a company..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                            <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4 text-muted-foreground" />
+                                {company.name}
+                            </div>
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                {selectedCompany && (
+                    <Badge variant="outline" className="font-mono">
+                        <Hash className="mr-2 h-4 w-4" />
+                        {selectedCompany.companyCode}
+                    </Badge>
+                )}
             </div>
 
             {selectedCompanyId && (
@@ -215,7 +223,6 @@ export default function ManageUsersPage() {
                     <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Company Code</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>PIN</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -227,12 +234,6 @@ export default function ManageUsersPage() {
                         <TableRow key={u.id}>
                             <TableCell className="font-medium">{u.name}</TableCell>
                             <TableCell>{u.email}</TableCell>
-                             <TableCell>
-                                <div className="flex items-center gap-2 font-mono text-sm">
-                                    <Hash className="h-4 w-4 text-muted-foreground" />
-                                    {selectedCompany?.companyCode}
-                                </div>
-                            </TableCell>
                             <TableCell>
                             <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>
                                 {u.role === 'admin' ? <Shield className="mr-2 h-4 w-4" /> : <User className="mr-2 h-4 w-4" />}
@@ -285,7 +286,7 @@ export default function ManageUsersPage() {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center">
+                            <TableCell colSpan={5} className="h-24 text-center">
                                 No users found for this company.
                             </TableCell>
                         </TableRow>
