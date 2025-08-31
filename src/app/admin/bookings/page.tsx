@@ -34,6 +34,28 @@ export default function BookingsPage() {
         description: `The booking request has been ${status}.`
     });
   }
+  
+  const formatTimeRange = (startTime: string) => {
+    const [time, ampm] = startTime.split(' ');
+    let [hour] = time.split(':').map(Number);
+    
+    if (ampm === 'PM' && hour !== 12) {
+      hour += 12;
+    }
+    if (ampm === 'AM' && hour === 12) {
+      hour = 0;
+    }
+
+    const endHour = hour + 1;
+    
+    const formatHour = (h: number) => {
+        const displayHour = h % 12 === 0 ? 12 : h % 12;
+        const displayAmpm = h < 12 || h === 24 ? 'AM' : 'PM';
+        return `${displayHour}:00 ${displayAmpm}`;
+    };
+
+    return `${startTime} - ${formatHour(endHour)}`;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,7 +88,7 @@ export default function BookingsPage() {
                     <TableCell>
                       <Badge variant="outline">
                         <Clock className="mr-2 h-4 w-4" />
-                        {booking.time}
+                        {formatTimeRange(booking.time)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
