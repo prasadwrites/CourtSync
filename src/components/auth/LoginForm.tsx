@@ -21,6 +21,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useStore } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 const FormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -28,16 +30,10 @@ const FormSchema = z.object({
   role: z.enum(['admin', 'user'], { required_error: 'You need to select a role.' }),
   companyCode: z.string().optional(),
 }).refine(data => {
-    // companyCode is required if role is user or admin (but not super-admin)
+    // companyCode is required if role is user
     return data.role !== 'user' || (data.role === 'user' && data.companyCode && data.companyCode.length > 0);
 }, {
-    message: "Company code is required.",
-    path: ["companyCode"],
-}).refine(data => {
-    // companyCode is required for company-admin
-    return data.role !== 'admin' || (data.role === 'admin' && data.companyCode && data.companyCode.length > 0);
-}, {
-    message: "Company code is required for Company Admins.",
+    message: "Company code is required for users.",
     path: ["companyCode"],
 });
 
@@ -45,7 +41,6 @@ export function LoginForm() {
   const router = useRouter();
   const { login, superAdminLogin } = useStore();
   const { toast } = useToast();
-  const [isCompanyAdmin, setIsCompanyAdmin] = React.useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -61,11 +56,11 @@ export function LoginForm() {
 
   const onSubmit = (data: z.infer<typeof FormSchema>) => {
     let success = false;
+    // If the role is admin and there is no company code, it's a super admin.
     if (data.role === 'admin' && !data.companyCode) {
-        // Super Admin Login
         success = superAdminLogin(data.email, data.pin);
     } else {
-        // User or Company Admin Login
+        // Otherwise it is a company admin or a user, who both need company codes.
         success = login(data.email, data.pin, data.role, data.companyCode);
     }
     
@@ -95,10 +90,7 @@ export function LoginForm() {
               <FormLabel>Sign in as</FormLabel>
               <FormControl>
                 <RadioGroup
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    form.setValue('companyCode', ''); // Reset company code on role change
-                  }}
+                  onValueChange={field.onChange}
                   defaultValue={field.value}
                   className="flex items-center space-x-4"
                 >
@@ -154,12 +146,20 @@ export function LoginForm() {
                 <FormItem>
                 <FormLabel>Company Code</FormLabel>
                 <FormControl>
-                    <Input placeholder="Enter company code" {...field} />
+                    <Input placeholder="Enter company code (required for users)" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
             )}
             />
+             {role === 'admin' && (
+                <Alert variant="default" className="flex items-start gap-3 text-xs">
+                    <Info className="h-4 w-4 mt-0.5"/>
+                    <div className="flex-1">
+                        Leave the Company Code blank to sign in as a Super Admin.
+                    </div>
+                </Alert>
+            )}
         </div>
         
         <Button type="submit" className="w-full">Sign In</Button>
