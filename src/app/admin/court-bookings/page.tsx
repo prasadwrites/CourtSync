@@ -74,6 +74,28 @@ export default function CourtBookingsPage() {
     }
   };
 
+  const formatTimeRange = (startTime: string) => {
+    const [time, ampm] = startTime.split(' ');
+    let [hour] = time.split(':').map(Number);
+    
+    if (ampm === 'PM' && hour !== 12) {
+      hour += 12;
+    }
+    if (ampm === 'AM' && hour === 12) {
+      hour = 0;
+    }
+
+    const endHour = hour + 1;
+    
+    const formatHour = (h: number) => {
+        const displayHour = h % 12 === 0 ? 12 : h % 12;
+        const displayAmpm = h < 12 || h === 24 ? 'AM' : 'PM';
+        return `${displayHour}:00 ${displayAmpm}`;
+    };
+
+    return `${startTime} - ${formatHour(endHour)}`;
+  }
+
   const renderActions = (booking: ReturnType<typeof getBookingsForCourt>[0]) => {
     if (booking.status === 'pending') {
       return (
@@ -127,7 +149,8 @@ export default function CourtBookingsPage() {
                     <TableHeader>
                         <TableRow>
                         <TableHead>User</TableHead>
-                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -136,7 +159,8 @@ export default function CourtBookingsPage() {
                         {courtBookings.map((booking) => (
                             <TableRow key={booking.id}>
                                 <TableCell className="font-medium flex items-center gap-2"><User className="h-4 w-4" />{booking.userName}</TableCell>
-                                <TableCell className="flex items-center gap-2"><Calendar className="h-4 w-4"/>{new Date(booking.date).toLocaleDateString()} at {booking.time}</TableCell>
+                                <TableCell className="flex items-center gap-2"><Calendar className="h-4 w-4"/>{new Date(booking.date).toLocaleDateString()}</TableCell>
+                                <TableCell>{formatTimeRange(booking.time)}</TableCell>
                                 <TableCell>{getStatusBadge(booking.status)}</TableCell>
                                 <TableCell className="text-right">{renderActions(booking)}</TableCell>
                             </TableRow>
