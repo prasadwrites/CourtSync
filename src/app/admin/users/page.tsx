@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PlusCircle, User, Shield } from 'lucide-react';
+import { PlusCircle, User, Shield, RefreshCw, KeyRound } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,7 +51,7 @@ const userFormSchema = z.object({
 });
 
 export default function UsersPage() {
-  const { users, addUser } = useStore();
+  const { users, addUser, regeneratePin } = useStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -65,6 +65,14 @@ export default function UsersPage() {
     toast({ title: 'User Created', description: `User ${values.name} has been added.` });
     form.reset();
     setIsDialogOpen(false);
+  }
+
+  function handleRegeneratePin(userId: string, userName: string) {
+    regeneratePin(userId);
+    toast({
+      title: 'PIN Regenerated',
+      description: `A new PIN has been generated for ${userName}.`,
+    });
   }
 
   return (
@@ -81,7 +89,7 @@ export default function UsersPage() {
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
               <DialogDescription>
-                Fill in the details to create a new user account.
+                Fill in the details to create a new user account. A PIN will be auto-generated.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -153,6 +161,8 @@ export default function UsersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>PIN</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -169,6 +179,22 @@ export default function UsersPage() {
                       )}
                       {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </Badge>
+                  </TableCell>
+                   <TableCell>
+                    <Badge variant="outline" className="font-mono tracking-widest">
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      {user.pin}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRegeneratePin(user.id, user.name)}
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Regenerate PIN
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

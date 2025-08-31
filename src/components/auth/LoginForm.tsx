@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const FormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+  pin: z.string().min(6, { message: 'PIN must be 6 characters.' }).max(6),
   role: z.enum(['admin', 'user'], { required_error: 'You need to select a role.' }),
 });
 
@@ -34,13 +34,13 @@ export function LoginForm() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       email: '',
-      password: '',
+      pin: '',
       role: 'user',
     },
   });
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
-    const success = login(data.email, data.role);
+    const success = login(data.email, data.pin, data.role);
     if (success) {
       toast({
         title: 'Login Successful',
@@ -51,7 +51,7 @@ export function LoginForm() {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'Invalid email or role. Please try again.',
+        description: 'Invalid email, PIN, or role. Please try again.',
       });
     }
   }
@@ -74,12 +74,12 @@ export function LoginForm() {
         />
         <FormField
           control={form.control}
-          name="password"
+          name="pin"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>PIN</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <Input type="password" placeholder="••••••" {...field} maxLength={6} />
               </FormControl>
               <FormMessage />
             </FormItem>
