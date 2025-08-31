@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -198,9 +199,7 @@ export default function UsersPage() {
                     <TableCell>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="cursor-help">
-                            <KeyRound className="h-4 w-4" />
-                          </Button>
+                           <span className="cursor-help"><KeyRound className="h-4 w-4" /></span>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p className="font-mono tracking-widest">{user.pin}</p>
