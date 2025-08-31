@@ -65,6 +65,7 @@ type Action =
   | { type: 'LOGIN'; payload: { user: User } }
   | { type: 'LOGOUT' }
   | { type: 'ADD_USER'; payload: User }
+  | { type: 'DELETE_USER'; payload: { userId: string } }
   | { type: 'ADD_COURT'; payload: Court }
   | { type: 'DELETE_COURT'; payload: string }
   | { type: 'ADD_BOOKING'; payload: Booking }
@@ -90,6 +91,8 @@ const appReducer = (state: AppState, action: Action): AppState => {
       return { ...state, user: null };
     case 'ADD_USER':
       return { ...state, users: [...state.users, action.payload] };
+    case 'DELETE_USER':
+      return { ...state, users: state.users.filter(u => u.id !== action.payload.userId) };
     case 'ADD_COURT':
         return { ...state, courts: [...state.courts, action.payload] };
     case 'DELETE_COURT':
@@ -127,6 +130,7 @@ interface StoreContextValue extends AppState {
   superAdminLogin: (email: string, pin: string) => boolean;
   logout: () => void;
   addUser: (user: Omit<User, 'id' | 'pin'>) => void;
+  deleteUser: (userId: string) => void;
   addCourt: (court: Omit<Court, 'id'>) => void;
   deleteCourt: (courtId: string) => void;
   addBooking: (booking: Omit<Booking, 'id' | 'status'>) => void;
@@ -213,6 +217,10 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'ADD_USER', payload: newUser });
   };
 
+  const deleteUser = (userId: string) => {
+    dispatch({ type: 'DELETE_USER', payload: { userId } });
+  }
+
   const regeneratePin = (userId: string) => {
     const newPin = generatePin();
     dispatch({ type: 'REGENERATE_PIN', payload: { userId, newPin } });
@@ -262,7 +270,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <StoreContext.Provider value={{ ...state, login, superAdminLogin, logout, addUser, addCourt, deleteCourt, addBooking, updateBookingStatus, regeneratePin, addCompanyAndAdmin }}>
+    <StoreContext.Provider value={{ ...state, login, superAdminLogin, logout, addUser, deleteUser, addCourt, deleteCourt, addBooking, updateBookingStatus, regeneratePin, addCompanyAndAdmin }}>
       {children}
     </StoreContext.Provider>
   );
