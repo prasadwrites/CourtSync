@@ -48,7 +48,6 @@ export default function UserLayout({ children }: { children: ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  onClick={() => router.push(item.href)}
                   isActive={pathname === item.href}
                   tooltip={item.label}
                 >
