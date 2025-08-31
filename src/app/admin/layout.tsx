@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Users, CalendarCheck, Shield, BookCopy, Building, UserCog, Sprout, BookUser } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarCheck, Shield, BookCopy, Building, UserCog, Sprout, BookUser, Coins } from 'lucide-react';
 import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -42,6 +42,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/companies', label: 'Company Management', icon: Building },
     { href: '/admin/manage-users', label: 'Manage Users', icon: UserCog },
     { href: '/admin/manage-courts', label: 'Manage Courts', icon: Sprout },
+    { href: '/admin/manage-credits', label: 'Manage Credits', icon: Coins },
   ];
 
   const companyAdminMenuItems = [
@@ -51,6 +52,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/bookings', label: 'Booking Approvals', icon: CalendarCheck },
     { href: '/admin/court-bookings', label: 'Court Bookings', icon: BookCopy },
     { href: '/admin/user-bookings', label: 'User Bookings', icon: BookUser },
+    { href: '/admin/manage-credits', label: 'Manage Credits', icon: Coins },
   ];
 
   const menuItems = isSuperAdmin ? superAdminMenuItems : companyAdminMenuItems;
