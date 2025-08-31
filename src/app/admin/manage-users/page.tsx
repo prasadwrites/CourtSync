@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PlusCircle, Trash2, User, Shield, RefreshCw, KeyRound, Building, Hash, Coins } from 'lucide-react';
+import { PlusCircle, Trash2, User, Shield, RefreshCw, KeyRound, Building, Hash, Coins, Pencil } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import {
@@ -70,10 +70,16 @@ const userFormSchema = z.object({
   role: z.enum(['admin', 'user']),
 });
 
+const creditFormSchema = z.object({
+    amount: z.coerce.number(),
+});
+
 export default function ManageUsersPage() {
-  const { companies, users, addUser, deleteUser, regeneratePin } = useStore();
+  const { companies, users, addUser, deleteUser, regeneratePin, updateUserCredits } = useStore();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isCreditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
   const { toast } = useToast();
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
@@ -83,6 +89,11 @@ export default function ManageUsersPage() {
     resolver: zodResolver(userFormSchema),
     defaultValues: { name: '', email: '', role: 'user'},
   });
+  
+  const creditForm = useForm<z.infer<typeof creditFormSchema>>({
+    resolver: zodResolver(creditFormSchema),
+    defaultValues: { amount: 0 },
+  });
 
   function onSubmit(values: z.infer<typeof userFormSchema>) {
     if (!selectedCompanyId) return;
@@ -90,6 +101,15 @@ export default function ManageUsersPage() {
     toast({ title: 'User Created', description: `User ${values.name} has been added.` });
     form.reset();
     setCreateDialogOpen(false);
+  }
+
+  function onCreditSubmit(values: z.infer<typeof creditFormSchema>) {
+    if (!selectedUser) return;
+    updateUserCredits(selectedUser.id, values.amount);
+    toast({ title: 'Credits Updated', description: `Updated credits for ${selectedUser.name}.` });
+    creditForm.reset();
+    setCreditDialogOpen(false);
+    setSelectedUser(null);
   }
 
   function handleRegeneratePin(userId: string, userName: string) {
@@ -258,6 +278,18 @@ export default function ManageUsersPage() {
                                 </div>
                             </TableCell>
                             <TableCell className="text-right space-x-1">
+                             <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setSelectedUser(u);
+                                    creditForm.setValue('amount', 0);
+                                    setCreditDialogOpen(true);
+                                }}
+                               >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Manage Credits
+                               </Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="outline" size="sm">
@@ -318,6 +350,37 @@ export default function ManageUsersPage() {
             )}
         </CardContent>
        </Card>
+
+        <Dialog open={isCreditDialogOpen} onOpenChange={setCreditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Manage Credits</DialogTitle>
+              <DialogDescription>
+                Allocate or remove credits for {selectedUser?.name}. Enter a positive number to add credits, or a negative number to remove them.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...creditForm}>
+              <form onSubmit={creditForm.handleSubmit(onCreditSubmit)} className="space-y-4 py-4">
+                <FormField
+                  control={creditForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Credits to Add/Remove</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit">Update Credits</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
