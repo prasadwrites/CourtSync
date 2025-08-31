@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useStore } from '@/lib/store';
@@ -64,9 +65,11 @@ export default function MyBookingsPage() {
                         <Shield className="h-4 w-4 text-muted-foreground" />
                         {booking.courtName}
                     </TableCell>
-                    <TableCell className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {new Date(booking.date).toLocaleDateString()}
+                    <TableCell>
+                        <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            {new Date(booking.date).toLocaleDateString()}
+                        </div>
                     </TableCell>
                     <TableCell>{booking.time}</TableCell>
                     <TableCell>
