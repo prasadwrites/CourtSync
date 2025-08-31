@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useReducer, useEffect, useState } from 'react';
-import type { User, Court, Booking, Company } from './types';
+import type { User, Court, Booking, Company, CreditLog } from './types';
 
 const generatePin = (): string => {
     const numbers = '0123456789';
@@ -51,6 +51,10 @@ const initialBookings: Booking[] = [
   { id: '2', courtId: '2', userId: '3', date: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split('T')[0], time: '2:00 PM', status: 'pending' },
 ];
 
+const initialCreditHistory: CreditLog[] = [
+    { id: '1', userId: '3', date: new Date().toISOString(), amountChanged: 5, newBalance: 5 }
+];
+
 // --- STATE AND ACTIONS ---
 interface AppState {
   user: User | null;
@@ -58,21 +62,22 @@ interface AppState {
   courts: Court[];
   bookings: Booking[];
   companies: Company[];
+  creditHistory: CreditLog[];
 }
 
 type Action =
   | { type: 'SET_INITIAL_STATE', payload: Partial<AppState> }
   | { type: 'LOGIN'; payload: { user: User } }
   | { type: 'LOGOUT' }
-  | { type: 'ADD_USER'; payload: User }
+  | { type: 'ADD_USER'; payload: { user: User, creditLog: CreditLog } }
   | { type: 'DELETE_USER'; payload: { userId: string } }
   | { type: 'ADD_COURT'; payload: Court }
   | { type: 'DELETE_COURT'; payload: string }
-  | { type: 'ADD_BOOKING'; payload: { booking: Booking; userId: string; } }
-  | { type: 'UPDATE_BOOKING_STATUS'; payload: { bookingId: string; status: Booking['status'] } }
+  | { type: 'ADD_BOOKING'; payload: { booking: Booking; userId: string; creditLog: CreditLog } }
+  | { type: 'UPDATE_BOOKING_STATUS'; payload: { bookingId: string; status: Booking['status']; creditLog?: CreditLog } }
   | { type: 'REGENERATE_PIN'; payload: { userId: string, newPin: string }}
   | { type: 'ADD_COMPANY_AND_ADMIN'; payload: { company: Company, admin: User }}
-  | { type: 'UPDATE_USER_CREDITS', payload: { userId: string; amount: number }};
+  | { type: 'UPDATE_USER_CREDITS', payload: { userId: string; amount: number; creditLog: CreditLog }};
 
 const initialState: AppState = {
   user: null,
@@ -80,6 +85,7 @@ const initialState: AppState = {
   courts: initialCourts,
   bookings: initialBookings,
   companies: initialCompanies,
+  creditHistory: initialCreditHistory,
 };
 
 const appReducer = (state: AppState, action: Action): AppState => {
@@ -93,7 +99,11 @@ const appReducer = (state: AppState, action: Action): AppState => {
     case 'LOGOUT':
       return { ...state, user: null };
     case 'ADD_USER':
-      return { ...state, users: [...state.users, action.payload] };
+      return { 
+          ...state, 
+          users: [...state.users, action.payload.user],
+          creditHistory: [...state.creditHistory, action.payload.creditLog],
+      };
     case 'DELETE_USER':
       return { ...state, users: state.users.filter(u => u.id !== action.payload.userId) };
     case 'ADD_COURT':
@@ -104,18 +114,17 @@ const appReducer = (state: AppState, action: Action): AppState => {
       return {
           ...state,
           bookings: [...state.bookings, action.payload.booking],
-          // Deduct credit from user
           users: state.users.map((u) =>
               u.id === action.payload.userId ? { ...u, credits: u.credits - 1 } : u
           ),
-          // Also update the logged-in user object if it's them
           user: state.user && state.user.id === action.payload.userId 
             ? { ...state.user, credits: state.user.credits - 1 } 
             : state.user,
+          creditHistory: [...state.creditHistory, action.payload.creditLog],
       };
     case 'UPDATE_BOOKING_STATUS':
       const booking = state.bookings.find(b => b.id === action.payload.bookingId);
-      if (booking && (booking.status === 'approved' || booking.status === 'pending') && action.payload.status === 'rejected') {
+      if (booking && (booking.status === 'approved' || booking.status === 'pending') && action.payload.status === 'rejected' && action.payload.creditLog) {
         // Refund credit
         return {
           ...state,
@@ -128,6 +137,7 @@ const appReducer = (state: AppState, action: Action): AppState => {
            user: state.user && state.user.id === booking.userId
             ? { ...state.user, credits: state.user.credits + 1 }
             : state.user,
+          creditHistory: [...state.creditHistory, action.payload.creditLog],
         };
       }
       return {
@@ -156,7 +166,8 @@ const appReducer = (state: AppState, action: Action): AppState => {
                 u.id === action.payload.userId 
                 ? { ...u, credits: Math.max(0, u.credits + action.payload.amount) } 
                 : u
-            )
+            ),
+            creditHistory: [...state.creditHistory, action.payload.creditLog],
         }
     default:
       return state;
@@ -202,6 +213,9 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
                 credits: u.credits ?? (u.role === 'user' ? 5 : 999)
             }));
           }
+          if (!parsedState.creditHistory) {
+              parsedState.creditHistory = [];
+          }
           dispatch({ type: 'SET_INITIAL_STATE', payload: parsedState });
       } else {
         dispatch({ type: 'SET_INITIAL_STATE', payload: initialState });
@@ -222,6 +236,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
                 courts: state.courts,
                 bookings: state.bookings,
                 companies: state.companies,
+                creditHistory: state.creditHistory,
             };
             localStorage.setItem('courtSyncState', JSON.stringify(stateToSave));
         } catch(error) {
@@ -268,13 +283,20 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   
   const addUser = (user: Omit<User, 'id' | 'pin' | 'credits'>) => {
     const newPin = generatePin();
-    const newUser = { 
+    const newUser: User = { 
         ...user, 
         id: (Math.max(...state.users.map(u => parseInt(u.id)), 0) + 1).toString(), 
         pin: newPin,
         credits: 1, // Start with 1 credit
     };
-    dispatch({ type: 'ADD_USER', payload: newUser });
+    const creditLog: CreditLog = {
+        id: (Math.max(...state.creditHistory.map(c => parseInt(c.id)), 0) + 1).toString(),
+        userId: newUser.id,
+        date: new Date().toISOString(),
+        amountChanged: 1,
+        newBalance: 1,
+    }
+    dispatch({ type: 'ADD_USER', payload: { user: newUser, creditLog } });
   };
 
   const deleteUser = (userId: string) => {
@@ -300,17 +322,51 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     if (!user || user.credits < 1) {
         return false; // Not enough credits
     }
-    const newBooking = { ...booking, id: (Math.max(...state.bookings.map(b => parseInt(b.id)), 0) + 1).toString(), status: 'pending' as const };
-    dispatch({ type: 'ADD_BOOKING', payload: { booking: newBooking, userId: user.id } });
+    const newBooking: Booking = { ...booking, id: (Math.max(...state.bookings.map(b => parseInt(b.id)), 0) + 1).toString(), status: 'pending' as const };
+    const creditLog: CreditLog = {
+        id: (Math.max(...state.creditHistory.map(c => parseInt(c.id)), 0) + 1).toString(),
+        userId: user.id,
+        date: new Date().toISOString(),
+        amountChanged: -1,
+        newBalance: user.credits - 1,
+    }
+    dispatch({ type: 'ADD_BOOKING', payload: { booking: newBooking, userId: user.id, creditLog } });
     return true;
   };
 
   const updateBookingStatus = (bookingId: string, status: Booking['status']) => {
+     const booking = state.bookings.find(b => b.id === bookingId);
+     if (booking && (booking.status === 'approved' || booking.status === 'pending') && status === 'rejected') {
+        const user = state.users.find(u => u.id === booking.userId);
+        if(user){
+            const creditLog: CreditLog = {
+                id: (Math.max(...state.creditHistory.map(c => parseInt(c.id)), 0) + 1).toString(),
+                userId: user.id,
+                date: new Date().toISOString(),
+                amountChanged: 1,
+                newBalance: user.credits + 1,
+            };
+             dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId, status, creditLog } });
+             return;
+        }
+     }
     dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId, status } });
   };
   
   const updateUserCredits = (userId: string, amount: number) => {
-    dispatch({ type: 'UPDATE_USER_CREDITS', payload: { userId, amount } });
+    const user = state.users.find(u => u.id === userId);
+    if (!user) return;
+    
+    const newBalance = Math.max(0, user.credits + amount);
+
+    const creditLog: CreditLog = {
+        id: (Math.max(...state.creditHistory.map(c => parseInt(c.id)), 0) + 1).toString(),
+        userId: userId,
+        date: new Date().toISOString(),
+        amountChanged: amount,
+        newBalance: newBalance,
+    }
+    dispatch({ type: 'UPDATE_USER_CREDITS', payload: { userId, amount, creditLog } });
   }
 
   const addCompanyAndAdmin = (payload: { companyName: string; adminName: string; adminEmail: string }) => {

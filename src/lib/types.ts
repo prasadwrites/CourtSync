@@ -31,3 +31,11 @@ export interface Company {
     name: string;
     companyCode: string;
 }
+
+export interface CreditLog {
+    id: string;
+    userId: string;
+    date: string; // ISO date string
+    amountChanged: number;
+    newBalance: number;
+}
