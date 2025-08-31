@@ -58,8 +58,8 @@ export default function Home() {
       <main className="flex-1">
         <section className="relative w-full pt-12 md:pt-24 lg:pt-32 hero-gradient">
           <div className="container px-4 md:px-6 space-y-10 xl:space-y-16">
-            <div className="grid max-w-[1300px] mx-auto gap-4 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16">
-              <div className="flex flex-col justify-center space-y-4">
+            <div className="grid max-w-[1300px] mx-auto gap-8 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16 items-center">
+              <div className="flex flex-col justify-center space-y-4 text-center md:text-left">
                 <h1 className="lg:leading-tighter text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-[3.4rem] 2xl:text-[3.75rem]">
                   The Ultimate Court Management Platform
                 </h1>
@@ -70,7 +70,7 @@ export default function Home() {
                   <Button size="lg">Get Started</Button>
                 </div>
               </div>
-              <div className="w-full max-w-md">
+              <div className="w-full max-w-md mx-auto">
                 <Card>
                   <CardHeader className="text-center">
                     <CardTitle className="text-2xl">Welcome Back</CardTitle>
@@ -96,9 +96,9 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3 pt-12">
+            <div className="mx-auto grid max-w-5xl justify-items-center gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3 pt-12">
               {features.map((feature, index) => (
-                <div key={index} className="flex flex-col items-center text-center gap-2 p-4">
+                <div key={index} className="flex flex-col items-center text-center gap-2 p-4 max-w-xs">
                   <div className="bg-primary/10 p-3 rounded-full">
                      {feature.icon}
                   </div>
