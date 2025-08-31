@@ -187,6 +187,16 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
 
 
   const login = (email: string, pin: string, role: 'admin' | 'user', companyCode?: string) => {
+    if (role === 'user') {
+      const user = state.users.find(u => u.email === email && u.pin === pin && u.role === 'user');
+      if (user) {
+        dispatch({ type: 'LOGIN', payload: { user } });
+        return true;
+      }
+      return false;
+    }
+    
+    // Admin login
     const company = state.companies.find(c => c.companyCode === companyCode);
     if (!company) return false;
     

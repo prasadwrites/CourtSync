@@ -30,10 +30,10 @@ const FormSchema = z.object({
   role: z.enum(['admin', 'user'], { required_error: 'You need to select a role.' }),
   companyCode: z.string().optional(),
 }).refine(data => {
-    // companyCode is required if role is user
-    return data.role !== 'user' || (data.role === 'user' && data.companyCode && data.companyCode.length > 0);
+    // companyCode is required if role is admin but not for a user.
+    return data.role !== 'admin' || (data.role === 'admin');
 }, {
-    message: "Company code is required for users.",
+    message: "Company code is required for admins.",
     path: ["companyCode"],
 });
 
@@ -60,7 +60,7 @@ export function LoginForm() {
     if (data.role === 'admin' && !data.companyCode) {
         success = superAdminLogin(data.email, data.pin);
     } else {
-        // Otherwise it is a company admin or a user, who both need company codes.
+        // Otherwise it is a company admin or a user.
         success = login(data.email, data.pin, data.role, data.companyCode);
     }
     
@@ -138,7 +138,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <div className={cn("space-y-2 transition-opacity duration-300", role === 'admin' || role === 'user' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden')}>
+        <div className={cn("space-y-2 transition-opacity duration-300", role === 'admin' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden pointer-events-none')}>
             <FormField
             control={form.control}
             name="companyCode"
@@ -146,7 +146,7 @@ export function LoginForm() {
                 <FormItem>
                 <FormLabel>Company Code</FormLabel>
                 <FormControl>
-                    <Input placeholder="Enter company code (required for users)" {...field} />
+                    <Input placeholder="Enter company code" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
