@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PlusCircle, Trash2, User, Shield, RefreshCw, KeyRound, Building } from 'lucide-react';
+import { PlusCircle, Trash2, User, Shield, RefreshCw, KeyRound, Building, Hash } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import {
@@ -215,6 +215,7 @@ export default function ManageUsersPage() {
                     <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead>Company Code</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>PIN</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -226,6 +227,12 @@ export default function ManageUsersPage() {
                         <TableRow key={u.id}>
                             <TableCell className="font-medium">{u.name}</TableCell>
                             <TableCell>{u.email}</TableCell>
+                             <TableCell>
+                                <div className="flex items-center gap-2 font-mono text-sm">
+                                    <Hash className="h-4 w-4 text-muted-foreground" />
+                                    {selectedCompany?.companyCode}
+                                </div>
+                            </TableCell>
                             <TableCell>
                             <Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>
                                 {u.role === 'admin' ? <Shield className="mr-2 h-4 w-4" /> : <User className="mr-2 h-4 w-4" />}
@@ -278,7 +285,7 @@ export default function ManageUsersPage() {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 No users found for this company.
                             </TableCell>
                         </TableRow>
