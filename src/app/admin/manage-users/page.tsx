@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PlusCircle, Trash2, User, Shield, RefreshCw, KeyRound, Building, Hash } from 'lucide-react';
+import { PlusCircle, Trash2, User, Shield, RefreshCw, KeyRound, Building, Hash, Coins } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import {
@@ -225,6 +225,7 @@ export default function ManageUsersPage() {
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>PIN</TableHead>
+                    <TableHead>Credits</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -249,6 +250,12 @@ export default function ManageUsersPage() {
                                 <p className="font-mono tracking-widest">{u.pin}</p>
                                 </TooltipContent>
                             </Tooltip>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    <Coins className="h-4 w-4 text-yellow-500" />
+                                    {u.credits}
+                                </div>
                             </TableCell>
                             <TableCell className="text-right space-x-1">
                             <AlertDialog>
@@ -300,7 +307,7 @@ export default function ManageUsersPage() {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 No users found for this company.
                             </TableCell>
                         </TableRow>
