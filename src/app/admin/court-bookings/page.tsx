@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useStore } from '@/lib/store';
@@ -16,26 +15,30 @@ import { Check, CheckCircle, Clock, X, Calendar, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useState } from 'react';
 
 export default function CourtBookingsPage() {
   const { courts, bookings, users, updateBookingStatus } = useStore();
   const { toast } = useToast();
+  const [selectedCourt, setSelectedCourt] = useState<string | null>(null);
 
   const handleUpdateStatus = (bookingId: string, status: 'approved' | 'rejected') => {
     updateBookingStatus(bookingId, status);
-    const successMessage = status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'cancelled';
+    const successMessage = status === 'approved' ? 'approved' : 'rejected';
     toast({
         title: `Booking ${successMessage.charAt(0).toUpperCase() + successMessage.slice(1)}`,
         description: `The booking request has been successfully ${successMessage}.`
     });
   }
   
-  const getBookingsForCourt = (courtId: string) => {
+  const getBookingsForCourt = (courtId: string | null) => {
+     if (!courtId) return [];
      return bookings
         .filter(
             (b) =>
@@ -90,6 +93,8 @@ export default function CourtBookingsPage() {
     }
     return null;
   }
+  
+  const courtBookings = getBookingsForCourt(selectedCourt);
 
   return (
     <div className="flex flex-col gap-6">
@@ -97,54 +102,50 @@ export default function CourtBookingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>View Bookings by Court</CardTitle>
-          <CardDescription>Click on a court to see all its pending and approved bookings.</CardDescription>
+          <CardDescription>Select a court to see all its pending and approved bookings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <Accordion type="single" collapsible className="w-full">
-              {courts.map(court => {
-                  const courtBookings = getBookingsForCourt(court.id);
-                  return (
-                    <AccordionItem value={court.id} key={court.id}>
-                        <AccordionTrigger>
-                            <div className='flex justify-between w-full pr-4'>
-                                <span className='font-semibold text-lg'>{court.name}</span>
-                                <Badge variant={courtBookings.length > 0 ? 'default' : 'secondary'}>
-                                    {courtBookings.length} Active Booking{courtBookings.length !== 1 && 's'}
-                                </Badge>
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                           {courtBookings.length > 0 ? (
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Date & Time</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {courtBookings.map((booking) => (
-                                        <TableRow key={booking.id}>
-                                            <TableCell className="font-medium flex items-center gap-2"><User className="h-4 w-4" />{booking.userName}</TableCell>
-                                            <TableCell className="flex items-center gap-2"><Calendar className="h-4 w-4"/>{new Date(booking.date).toLocaleDateString()} at {booking.time}</TableCell>
-                                            <TableCell>{getStatusBadge(booking.status)}</TableCell>
-                                            <TableCell className="text-right">{renderActions(booking)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                           ) : (
-                            <div className="text-center text-muted-foreground p-8">
-                                No active bookings for this court.
-                            </div>
-                           )}
-                        </AccordionContent>
-                    </AccordionItem>
-                  )
-              })}
-            </Accordion>
+            <div className="max-w-sm">
+                <Select onValueChange={setSelectedCourt}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a court" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {courts.map(court => (
+                            <SelectItem key={court.id} value={court.id}>{court.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+
+           {selectedCourt && (
+             courtBookings.length > 0 ? (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {courtBookings.map((booking) => (
+                            <TableRow key={booking.id}>
+                                <TableCell className="font-medium flex items-center gap-2"><User className="h-4 w-4" />{booking.userName}</TableCell>
+                                <TableCell className="flex items-center gap-2"><Calendar className="h-4 w-4"/>{new Date(booking.date).toLocaleDateString()} at {booking.time}</TableCell>
+                                <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                                <TableCell className="text-right">{renderActions(booking)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                ) : (
+                <div className="text-center text-muted-foreground p-8">
+                    No active bookings for this court.
+                </div>
+                )
+            )}
         </CardContent>
       </Card>
     </div>
