@@ -1,3 +1,4 @@
+
 'use client';
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
@@ -15,6 +16,7 @@ import {
 import { LayoutDashboard, BookCopy } from 'lucide-react';
 import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export default function UserLayout({ children }: { children: ReactNode }) {
   const { user } = useStore();
@@ -46,16 +48,15 @@ export default function UserLayout({ children }: { children: ReactNode }) {
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === item.href}
-                  tooltip={item.label}
-                >
-                  <a href={item.href}>
+                <Link href={item.href}>
+                  <SidebarMenuButton
+                    isActive={pathname === item.href}
+                    tooltip={item.label}
+                  >
                     <item.icon />
                     <span>{item.label}</span>
-                  </a>
-                </SidebarMenuButton>
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
