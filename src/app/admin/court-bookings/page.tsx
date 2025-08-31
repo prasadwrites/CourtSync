@@ -78,19 +78,19 @@ export default function CourtBookingsPage() {
     const [time, ampm] = startTime.split(' ');
     let [hour] = time.split(':').map(Number);
     
-    if (ampm === 'PM' && hour !== 12) {
+    if (ampm === 'PM' && hour < 12) {
       hour += 12;
     }
     if (ampm === 'AM' && hour === 12) {
-      hour = 0;
+      hour = 0; // Midnight case
     }
 
     const endHour = hour + 1;
     
     const formatHour = (h: number) => {
-        const displayHour = h % 12 === 0 ? 12 : h % 12;
+        const displayHour12 = h % 12 === 0 ? 12 : h % 12;
         const displayAmpm = h < 12 || h === 24 ? 'AM' : 'PM';
-        return `${displayHour}:00 ${displayAmpm}`;
+        return `${displayHour12}:00 ${displayAmpm}`;
     };
 
     return `${startTime} - ${formatHour(endHour)}`;
@@ -120,6 +120,13 @@ export default function CourtBookingsPage() {
   }
   
   const courtBookings = getBookingsForCourt(selectedCourt);
+  
+  const formatDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-').map(Number);
+    // Constructing date as UTC to avoid timezone shifts
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.toLocaleDateString('en-US', { timeZone: 'UTC' });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -159,7 +166,7 @@ export default function CourtBookingsPage() {
                         {courtBookings.map((booking) => (
                             <TableRow key={booking.id}>
                                 <TableCell className="font-medium flex items-center gap-2"><User className="h-4 w-4" />{booking.userName}</TableCell>
-                                <TableCell className="flex items-center gap-2"><Calendar className="h-4 w-4"/>{new Date(booking.date).toLocaleDateString()}</TableCell>
+                                <TableCell><div className="flex items-center gap-2"><Calendar className="h-4 w-4"/>{formatDate(booking.date)}</div></TableCell>
                                 <TableCell>{formatTimeRange(booking.time)}</TableCell>
                                 <TableCell>{getStatusBadge(booking.status)}</TableCell>
                                 <TableCell className="text-right">{renderActions(booking)}</TableCell>
