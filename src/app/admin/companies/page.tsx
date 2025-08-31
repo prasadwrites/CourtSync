@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PlusCircle, Building, KeyRound, Copy } from 'lucide-react';
+import { PlusCircle, Building, KeyRound, Copy, InfoIcon } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import {
@@ -158,6 +158,7 @@ export default function CompaniesPage() {
                   <TableHead>Company Name</TableHead>
                   <TableHead>Company Code</TableHead>
                   <TableHead>Admin</TableHead>
+                  <TableHead>Admin Company ID</TableHead>
                   <TableHead>Admin PIN</TableHead>
                 </TableRow>
               </TableHeader>
@@ -179,6 +180,13 @@ export default function CompaniesPage() {
                                 </div>
                             </TableCell>
                             <TableCell>{admin?.name || 'N/A'}</TableCell>
+                            <TableCell>
+                                {admin && (
+                                    <div className="flex items-center gap-2 font-mono">
+                                        {admin.companyId}
+                                    </div>
+                                )}
+                            </TableCell>
                             <TableCell>
                                 {admin && (
                                     <Tooltip>
