@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useStore } from '@/lib/store';
@@ -42,9 +43,17 @@ export default function CourtDetailPage() {
   const { toast } = useToast();
 
   const court = courts.find((c) => c.id === params.id);
+  
   const today = new Date();
   today.setHours(0,0,0,0);
-  const [date, setDate] = useState<Date | undefined>(today);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const twoWeeksFromNow = new Date(today);
+  twoWeeksFromNow.setDate(today.getDate() + 14);
+
+  const [date, setDate] = useState<Date | undefined>(tomorrow);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isConfirmOpen, setConfirmOpen] = useState(false);
 
@@ -115,14 +124,14 @@ export default function CourtDetailPage() {
         <Card>
             <CardHeader>
                 <CardTitle>Select a Date</CardTitle>
-                <CardDescription>Choose a day to see available times.</CardDescription>
+                <CardDescription>Choose a day to see available times. Bookings are available for the next two weeks.</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
                  <Calendar
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    disabled={(day) => day < today}
+                    disabled={(day) => day < tomorrow || day > twoWeeksFromNow}
                     className="rounded-md"
                 />
             </CardContent>
