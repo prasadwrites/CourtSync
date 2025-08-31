@@ -13,7 +13,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Users, CalendarCheck, Shield, BookCopy, Building, UserCog, Sprout } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarCheck, Shield, BookCopy, Building, UserCog, Sprout, BookUser } from 'lucide-react';
 import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -50,6 +50,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/courts', label: 'Court Management', icon: Shield },
     { href: '/admin/bookings', label: 'Booking Approvals', icon: CalendarCheck },
     { href: '/admin/court-bookings', label: 'Court Bookings', icon: BookCopy },
+    { href: '/admin/user-bookings', label: 'User Bookings', icon: BookUser },
   ];
 
   const menuItems = isSuperAdmin ? superAdminMenuItems : companyAdminMenuItems;
