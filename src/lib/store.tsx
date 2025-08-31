@@ -31,6 +31,7 @@ interface AppState {
 }
 
 type Action =
+  | { type: 'SET_INITIAL_STATE', payload: Partial<AppState> }
   | { type: 'LOGIN'; payload: User }
   | { type: 'LOGOUT' }
   | { type: 'ADD_USER'; payload: User }
@@ -48,10 +49,12 @@ const initialState: AppState = {
 
 const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
+    case 'SET_INITIAL_STATE':
+        return { ...state, ...action.payload };
     case 'LOGIN':
       return { ...state, user: action.payload };
     case 'LOGOUT':
-      return { ...state, user: null };
+      return { ...state, user: null, users: initialUsers, courts: initialCourts, bookings: initialBookings };
     case 'ADD_USER':
       return { ...state, users: [...state.users, action.payload] };
     case 'ADD_COURT':
@@ -90,21 +93,34 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    const storedState = localStorage.getItem('courtSyncState');
-    if (storedState) {
-        const parsedState = JSON.parse(storedState);
-        // Basic merge, could be more sophisticated
-        dispatch({ type: 'LOGIN', payload: parsedState.user });
-        // You might want to dispatch actions to set users, courts, bookings as well if they change
+    try {
+      const storedState = localStorage.getItem('courtSyncState');
+      if (storedState) {
+          const parsedState = JSON.parse(storedState);
+          dispatch({ type: 'SET_INITIAL_STATE', payload: parsedState });
+      }
+    } catch (error) {
+        console.error("Failed to parse state from localStorage", error);
+        // If parsing fails, we'll just use the initial state.
     }
     setIsInitialized(true);
   }, []);
 
   useEffect(() => {
-    if(isInitialized) {
-        localStorage.setItem('courtSyncState', JSON.stringify({ user: state.user }));
+    if (isInitialized) {
+        try {
+            const stateToSave = {
+                user: state.user,
+                users: state.users,
+                courts: state.courts,
+                bookings: state.bookings
+            };
+            localStorage.setItem('courtSyncState', JSON.stringify(stateToSave));
+        } catch(error) {
+            console.error("Failed to save state to localStorage", error);
+        }
     }
-  }, [state.user, isInitialized]);
+  }, [state, isInitialized]);
 
 
   const login = (email: string, role: 'admin' | 'user') => {
@@ -118,15 +134,17 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     dispatch({ type: 'LOGOUT' });
+    // Also clear from local storage
+    localStorage.removeItem('courtSyncState');
   };
   
   const addUser = (user: Omit<User, 'id'>) => {
-    const newUser = { ...user, id: (state.users.length + 1).toString() };
+    const newUser = { ...user, id: (Math.max(...state.users.map(u => parseInt(u.id)), 0) + 1).toString() };
     dispatch({ type: 'ADD_USER', payload: newUser });
   };
 
   const addCourt = (court: Omit<Court, 'id'>) => {
-    const newCourt = { ...court, id: (state.courts.length + 1).toString() };
+    const newCourt = { ...court, id: (Math.max(...state.courts.map(c => parseInt(c.id)), 0) + 1).toString() };
     dispatch({ type: 'ADD_COURT', payload: newCourt });
   };
 
@@ -135,7 +153,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const addBooking = (booking: Omit<Booking, 'id' | 'status'>) => {
-    const newBooking = { ...booking, id: (state.bookings.length + 1).toString(), status: 'pending' as const };
+    const newBooking = { ...booking, id: (Math.max(...state.bookings.map(b => parseInt(b.id)), 0) + 1).toString(), status: 'pending' as const };
     dispatch({ type: 'ADD_BOOKING', payload: newBooking });
   };
 
