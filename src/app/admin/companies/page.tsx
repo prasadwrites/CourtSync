@@ -158,7 +158,6 @@ export default function CompaniesPage() {
                   <TableHead>Company Name</TableHead>
                   <TableHead>Company Code</TableHead>
                   <TableHead>Admin</TableHead>
-                  <TableHead>Admin Company ID</TableHead>
                   <TableHead>Admin PIN</TableHead>
                 </TableRow>
               </TableHeader>
@@ -180,13 +179,6 @@ export default function CompaniesPage() {
                                 </div>
                             </TableCell>
                             <TableCell>{admin?.name || 'N/A'}</TableCell>
-                            <TableCell>
-                                {admin && (
-                                    <div className="flex items-center gap-2 font-mono">
-                                        {admin.companyId}
-                                    </div>
-                                )}
-                            </TableCell>
                             <TableCell>
                                 {admin && (
                                     <Tooltip>
