@@ -51,7 +51,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  onClick={() => router.push(item.href)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    router.push(item.href);
+                  }}
                   isActive={pathname === item.href}
                   tooltip={item.label}
                 >
