@@ -50,18 +50,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
-                  asChild
-                  onClick={(e) => {
-                    e.preventDefault();
-                    router.push(item.href);
-                  }}
+                  onClick={() => router.push(item.href)}
                   isActive={pathname === item.href}
                   tooltip={item.label}
                 >
-                  <a href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </a>
+                  <item.icon />
+                  <span>{item.label}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
