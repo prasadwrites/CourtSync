@@ -37,6 +37,28 @@ export default function MyBookingsPage() {
     }
   }
 
+  const formatTimeRange = (startTime: string) => {
+    const [time, ampm] = startTime.split(' ');
+    let [hour] = time.split(':').map(Number);
+    
+    if (ampm === 'PM' && hour !== 12) {
+      hour += 12;
+    }
+    if (ampm === 'AM' && hour === 12) {
+      hour = 0;
+    }
+
+    const endHour = hour + 1;
+    
+    const formatHour = (h: number) => {
+        const displayHour = h % 12 === 0 ? 12 : h % 12;
+        const displayAmpm = h < 12 || h === 24 ? 'AM' : 'PM';
+        return `${displayHour}:00 ${displayAmpm}`;
+    };
+
+    return `${startTime} - ${formatHour(endHour)}`;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold tracking-tight">My Bookings</h1>
@@ -71,7 +93,7 @@ export default function MyBookingsPage() {
                             {new Date(booking.date).toLocaleDateString()}
                         </div>
                     </TableCell>
-                    <TableCell>{booking.time}</TableCell>
+                    <TableCell>{formatTimeRange(booking.time)}</TableCell>
                     <TableCell>
                       {getStatusBadge(booking.status)}
                     </TableCell>
