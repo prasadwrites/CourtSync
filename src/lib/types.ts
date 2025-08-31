@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role: 'admin' | 'user';
   pin: string;
+  credits: number;
   companyId?: string; // Optional for super admin
 }
 

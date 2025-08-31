@@ -36,9 +36,9 @@ const initialCompanies: Company[] = [
 ];
 
 const initialUsers: User[] = [
-  { id: '1', name: 'Super Admin', email: 'super@admin.com', role: 'admin', pin: 'ABC123' },
-  { id: '2', name: 'Default Company Admin', email: 'admin@courtsync.com', role: 'admin', pin: 'ADM456', companyId: '1' },
-  { id: '3', name: 'Regular User', email: 'user@courtsync.com', role: 'user', pin: generatePin(), companyId: '1' },
+  { id: '1', name: 'Super Admin', email: 'super@admin.com', role: 'admin', pin: 'ABC123', credits: 999 },
+  { id: '2', name: 'Default Company Admin', email: 'admin@courtsync.com', role: 'admin', pin: 'ADM456', companyId: '1', credits: 999 },
+  { id: '3', name: 'Regular User', email: 'user@courtsync.com', role: 'user', pin: generatePin(), companyId: '1', credits: 5 },
 ];
 
 const initialCourts: Court[] = [
@@ -68,10 +68,11 @@ type Action =
   | { type: 'DELETE_USER'; payload: { userId: string } }
   | { type: 'ADD_COURT'; payload: Court }
   | { type: 'DELETE_COURT'; payload: string }
-  | { type: 'ADD_BOOKING'; payload: Booking }
+  | { type: 'ADD_BOOKING'; payload: { booking: Booking; userId: string; } }
   | { type: 'UPDATE_BOOKING_STATUS'; payload: { bookingId: string; status: Booking['status'] } }
   | { type: 'REGENERATE_PIN'; payload: { userId: string, newPin: string }}
-  | { type: 'ADD_COMPANY_AND_ADMIN'; payload: { company: Company, admin: User }};
+  | { type: 'ADD_COMPANY_AND_ADMIN'; payload: { company: Company, admin: User }}
+  | { type: 'UPDATE_USER_CREDITS', payload: { userId: string; amount: number }};
 
 const initialState: AppState = {
   user: null,
@@ -86,7 +87,9 @@ const appReducer = (state: AppState, action: Action): AppState => {
     case 'SET_INITIAL_STATE':
         return { ...state, ...action.payload };
     case 'LOGIN':
-      return { ...state, user: action.payload.user };
+      // When logging in, find the user from the current state to get up-to-date credit info
+      const loggedInUser = state.users.find(u => u.id === action.payload.user.id);
+      return { ...state, user: loggedInUser || action.payload.user };
     case 'LOGOUT':
       return { ...state, user: null };
     case 'ADD_USER':
@@ -98,8 +101,35 @@ const appReducer = (state: AppState, action: Action): AppState => {
     case 'DELETE_COURT':
         return { ...state, courts: state.courts.filter(c => c.id !== action.payload) };
     case 'ADD_BOOKING':
-      return { ...state, bookings: [...state.bookings, action.payload] };
+      return {
+          ...state,
+          bookings: [...state.bookings, action.payload.booking],
+          // Deduct credit from user
+          users: state.users.map((u) =>
+              u.id === action.payload.userId ? { ...u, credits: u.credits - 1 } : u
+          ),
+          // Also update the logged-in user object if it's them
+          user: state.user && state.user.id === action.payload.userId 
+            ? { ...state.user, credits: state.user.credits - 1 } 
+            : state.user,
+      };
     case 'UPDATE_BOOKING_STATUS':
+      const booking = state.bookings.find(b => b.id === action.payload.bookingId);
+      if (booking && (booking.status === 'approved' || booking.status === 'pending') && action.payload.status === 'rejected') {
+        // Refund credit
+        return {
+          ...state,
+          bookings: state.bookings.map(b =>
+            b.id === action.payload.bookingId ? { ...b, status: action.payload.status } : b
+          ),
+          users: state.users.map(u =>
+            u.id === booking.userId ? { ...u, credits: u.credits + 1 } : u
+          ),
+           user: state.user && state.user.id === booking.userId
+            ? { ...state.user, credits: state.user.credits + 1 }
+            : state.user,
+        };
+      }
       return {
         ...state,
         bookings: state.bookings.map((b) =>
@@ -119,6 +149,15 @@ const appReducer = (state: AppState, action: Action): AppState => {
             companies: [...state.companies, action.payload.company],
             users: [...state.users, action.payload.admin],
         };
+    case 'UPDATE_USER_CREDITS':
+        return {
+            ...state,
+            users: state.users.map(u => 
+                u.id === action.payload.userId 
+                ? { ...u, credits: Math.max(0, u.credits + action.payload.amount) } 
+                : u
+            )
+        }
     default:
       return state;
   }
@@ -129,14 +168,15 @@ interface StoreContextValue extends AppState {
   login: (email: string, pin: string, role: 'admin' | 'user', companyCode?: string) => boolean;
   superAdminLogin: (email: string, pin: string) => boolean;
   logout: () => void;
-  addUser: (user: Omit<User, 'id' | 'pin'>) => void;
+  addUser: (user: Omit<User, 'id' | 'pin' | 'credits'>) => void;
   deleteUser: (userId: string) => void;
   addCourt: (court: Omit<Court, 'id'>) => void;
   deleteCourt: (courtId: string) => void;
-  addBooking: (booking: Omit<Booking, 'id' | 'status'>) => void;
+  addBooking: (booking: Omit<Booking, 'id' | 'status'>) => boolean;
   updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
   regeneratePin: (userId: string) => void;
   addCompanyAndAdmin: (payload: { companyName: string; adminName: string; adminEmail: string }) => void;
+  updateUserCredits: (userId: string, amount: number) => void;
 }
 
 const StoreContext = createContext<StoreContextValue | undefined>(undefined);
@@ -156,6 +196,11 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
             if (superAdmin) {
               superAdmin.pin = 'ABC123';
             }
+             // Initialize credits if they don't exist
+            parsedState.users = parsedState.users.map((u: User) => ({
+                ...u,
+                credits: u.credits ?? (u.role === 'user' ? 5 : 999)
+            }));
           }
           dispatch({ type: 'SET_INITIAL_STATE', payload: parsedState });
       } else {
@@ -221,9 +266,14 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'LOGOUT' });
   };
   
-  const addUser = (user: Omit<User, 'id' | 'pin'>) => {
+  const addUser = (user: Omit<User, 'id' | 'pin' | 'credits'>) => {
     const newPin = generatePin();
-    const newUser = { ...user, id: (Math.max(...state.users.map(u => parseInt(u.id)), 0) + 1).toString(), pin: newPin };
+    const newUser = { 
+        ...user, 
+        id: (Math.max(...state.users.map(u => parseInt(u.id)), 0) + 1).toString(), 
+        pin: newPin,
+        credits: 1, // Start with 1 credit
+    };
     dispatch({ type: 'ADD_USER', payload: newUser });
   };
 
@@ -246,13 +296,22 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const addBooking = (booking: Omit<Booking, 'id' | 'status'>) => {
+    const user = state.users.find(u => u.id === booking.userId);
+    if (!user || user.credits < 1) {
+        return false; // Not enough credits
+    }
     const newBooking = { ...booking, id: (Math.max(...state.bookings.map(b => parseInt(b.id)), 0) + 1).toString(), status: 'pending' as const };
-    dispatch({ type: 'ADD_BOOKING', payload: newBooking });
+    dispatch({ type: 'ADD_BOOKING', payload: { booking: newBooking, userId: user.id } });
+    return true;
   };
 
   const updateBookingStatus = (bookingId: string, status: Booking['status']) => {
     dispatch({ type: 'UPDATE_BOOKING_STATUS', payload: { bookingId, status } });
   };
+  
+  const updateUserCredits = (userId: string, amount: number) => {
+    dispatch({ type: 'UPDATE_USER_CREDITS', payload: { userId, amount } });
+  }
 
   const addCompanyAndAdmin = (payload: { companyName: string; adminName: string; adminEmail: string }) => {
     const newCompanyId = (Math.max(...state.companies.map(c => parseInt(c.id)), 0) + 1).toString();
@@ -270,6 +329,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         role: 'admin',
         pin: generatePin(),
         companyId: newCompanyId,
+        credits: 999, // Admins have unlimited credits
     };
     
     dispatch({ type: 'ADD_COMPANY_AND_ADMIN', payload: { company: newCompany, admin: newAdmin } });
@@ -280,7 +340,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <StoreContext.Provider value={{ ...state, login, superAdminLogin, logout, addUser, deleteUser, addCourt, deleteCourt, addBooking, updateBookingStatus, regeneratePin, addCompanyAndAdmin }}>
+    <StoreContext.Provider value={{ ...state, login, superAdminLogin, logout, addUser, deleteUser, addCourt, deleteCourt, addBooking, updateBookingStatus, regeneratePin, addCompanyAndAdmin, updateUserCredits }}>
       {children}
     </StoreContext.Provider>
   );

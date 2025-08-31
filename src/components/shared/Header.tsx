@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -10,11 +11,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon, Coins } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { Logo } from '../icons/Logo';
 import { SidebarTrigger } from '../ui/sidebar';
+import { Badge } from '../ui/badge';
 
 export function Header() {
   const { user, logout } = useStore();
@@ -41,6 +43,12 @@ export function Header() {
         <h1 className="text-xl font-bold tracking-tight hidden md:block">CourtSync</h1>
        </div>
       <div className="ml-auto flex items-center gap-4">
+        {user?.role === 'user' && (
+          <Badge variant="outline" className="h-8">
+            <Coins className="mr-2 h-4 w-4 text-yellow-500" />
+            {user.credits} Credits
+          </Badge>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden rounded-full">

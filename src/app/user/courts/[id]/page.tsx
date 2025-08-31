@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Users, ArrowLeft, Clock } from 'lucide-react';
+import { MapPin, Users, ArrowLeft, Clock, AlertTriangle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
 
 const timeSlots = Array.from({ length: 12 }, (_, i) => {
     const startHour = i + 9;
@@ -56,6 +58,8 @@ export default function CourtDetailPage() {
   const [date, setDate] = useState<Date | undefined>(tomorrow);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isConfirmOpen, setConfirmOpen] = useState(false);
+  
+  const hasCredits = user ? user.credits > 0 : false;
 
   if (!court) {
     return (
@@ -81,16 +85,24 @@ export default function CourtDetailPage() {
   
   const handleBookingConfirm = () => {
     if (selectedTime && date && user) {
-        addBooking({
+        const success = addBooking({
             courtId: court.id,
             userId: user.id,
             date: selectedDateString,
             time: selectedTime,
         });
-        toast({
-            title: 'Booking Request Sent',
-            description: 'Your request is pending administrator approval.'
-        });
+        if (success) {
+            toast({
+                title: 'Booking Request Sent',
+                description: 'Your request is pending administrator approval. 1 credit was deducted.'
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Booking Failed',
+                description: 'You do not have enough credits to make this booking.'
+            });
+        }
     }
     setConfirmOpen(false);
     setSelectedTime(null);
@@ -119,6 +131,15 @@ export default function CourtDetailPage() {
             </div>
         </div>
       </div>
+      
+       {!hasCredits && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+                You have no credits remaining. You must have at least 1 credit to book a court. Please contact your company administrator.
+            </AlertDescription>
+          </Alert>
+        )}
 
       <div className="grid md:grid-cols-2 gap-8">
         <Card>
@@ -141,7 +162,7 @@ export default function CourtDetailPage() {
             <CardHeader>
                 <CardTitle>Available Time Slots</CardTitle>
                 <CardDescription>
-                   For {date ? format(date, 'PPP') : 'today'}
+                   For {date ? format(date, 'PPP') : 'today'}. Each booking is for 1 hour and costs 1 credit.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,7 +174,7 @@ export default function CourtDetailPage() {
                                 <Button 
                                     key={slot.startTime} 
                                     variant={getSlotVariant(slot.startTime)}
-                                    disabled={isBooked}
+                                    disabled={isBooked || !hasCredits}
                                     onClick={() => handleTimeSelect(slot.startTime)}
                                 >
                                     <Clock className="mr-2 h-4 w-4"/>
@@ -174,7 +195,7 @@ export default function CourtDetailPage() {
             <DialogHeader>
                 <DialogTitle>Confirm Booking Request</DialogTitle>
                 <DialogDescription>
-                    Are you sure you want to request this time slot?
+                    Requesting this time slot will deduct 1 credit. Are you sure you want to proceed?
                 </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
@@ -184,7 +205,7 @@ export default function CourtDetailPage() {
             </div>
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-                <Button onClick={handleBookingConfirm}>Confirm Request</Button>
+                <Button onClick={handleBookingConfirm}>Confirm Request (1 Credit)</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>

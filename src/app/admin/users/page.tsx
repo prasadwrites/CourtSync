@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PlusCircle, User, Shield, RefreshCw, KeyRound } from 'lucide-react';
+import { PlusCircle, User, Shield, RefreshCw, KeyRound, Coins, Pencil } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,24 +49,44 @@ const userFormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
 });
 
+const creditFormSchema = z.object({
+    amount: z.coerce.number(),
+});
+
 export default function UsersPage() {
-  const { user, users, addUser, regeneratePin } = useStore();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { user, users, addUser, regeneratePin, updateUserCredits } = useStore();
+  const [isUserDialogOpen, setUserDialogOpen] = useState(false);
+  const [isCreditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<typeof users[0] | null>(null);
   const { toast } = useToast();
 
   const companyUsers = users.filter(u => u.companyId === user?.companyId && u.role ==='user');
 
-  const form = useForm<z.infer<typeof userFormSchema>>({
+  const userForm = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
     defaultValues: { name: '', email: '' },
   });
+  
+  const creditForm = useForm<z.infer<typeof creditFormSchema>>({
+    resolver: zodResolver(creditFormSchema),
+    defaultValues: { amount: 0 },
+  });
 
-  function onSubmit(values: z.infer<typeof userFormSchema>) {
+  function onUserSubmit(values: z.infer<typeof userFormSchema>) {
     if (!user?.companyId) return;
     addUser({ ...values, role: 'user', companyId: user.companyId });
     toast({ title: 'User Created', description: `User ${values.name} has been added.` });
-    form.reset();
-    setIsDialogOpen(false);
+    userForm.reset();
+    setUserDialogOpen(false);
+  }
+
+  function onCreditSubmit(values: z.infer<typeof creditFormSchema>) {
+    if (!selectedUser) return;
+    updateUserCredits(selectedUser.id, values.amount);
+    toast({ title: 'Credits Updated', description: `Updated credits for ${selectedUser.name}.` });
+    creditForm.reset();
+    setCreditDialogOpen(false);
+    setSelectedUser(null);
   }
 
   function handleRegeneratePin(userId: string, userName: string) {
@@ -81,7 +101,7 @@ export default function UsersPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isUserDialogOpen} onOpenChange={setUserDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" /> Create User
@@ -91,13 +111,13 @@ export default function UsersPage() {
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
               <DialogDescription>
-                Fill in the details to create a new user account for your company. A PIN will be auto-generated.
+                Fill in the details to create a new user account for your company. They will start with 1 credit.
               </DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <Form {...userForm}>
+              <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="space-y-4 py-4">
                 <FormField
-                  control={form.control}
+                  control={userForm.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
@@ -110,7 +130,7 @@ export default function UsersPage() {
                   )}
                 />
                 <FormField
-                  control={form.control}
+                  control={userForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
@@ -144,6 +164,7 @@ export default function UsersPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>PIN</TableHead>
+                  <TableHead>Credits</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -168,14 +189,32 @@ export default function UsersPage() {
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
+                        <div className="flex items-center gap-2">
+                            <Coins className="h-4 w-4 text-yellow-500" />
+                            {u.credits}
+                        </div>
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                       <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            setSelectedUser(u);
+                            creditForm.setValue('amount', 0);
+                            setCreditDialogOpen(true);
+                        }}
+                       >
+                         <Pencil className="mr-2 h-4 w-4" />
+                         Manage
+                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleRegeneratePin(u.id, u.name)}
                       >
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        Regenerate PIN
+                        PIN
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -185,6 +224,37 @@ export default function UsersPage() {
           </TooltipProvider>
         </CardContent>
       </Card>
+      
+       <Dialog open={isCreditDialogOpen} onOpenChange={setCreditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Manage Credits</DialogTitle>
+              <DialogDescription>
+                Allocate or remove credits for {selectedUser?.name}. Enter a positive number to add credits, or a negative number to remove them.
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...creditForm}>
+              <form onSubmit={creditForm.handleSubmit(onCreditSubmit)} className="space-y-4 py-4">
+                <FormField
+                  control={creditForm.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Credits to Add/Remove</FormLabel>
+                      <FormControl>
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                  <Button type="submit">Update Credits</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
     </div>
   );
 }
