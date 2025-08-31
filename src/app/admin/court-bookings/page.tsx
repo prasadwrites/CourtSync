@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -19,15 +20,27 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { CheckCircle, Clock } from 'lucide-react';
+import { Check, CheckCircle, Clock, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CourtBookingsPage() {
-  const { courts, bookings, users } = useStore();
+  const { courts, bookings, users, updateBookingStatus } = useStore();
   const [selectedCourtId, setSelectedCourtId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleCourtSelect = (courtId: string) => {
     setSelectedCourtId(courtId);
   };
+
+  const handleUpdateStatus = (bookingId: string, status: 'approved' | 'rejected') => {
+    updateBookingStatus(bookingId, status);
+    const successMessage = status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'cancelled';
+    toast({
+        title: `Booking ${successMessage.charAt(0).toUpperCase() + successMessage.slice(1)}`,
+        description: `The booking request has been successfully ${successMessage}.`
+    });
+  }
 
   const filteredBookings = (selectedCourtId
     ? bookings.filter(
@@ -59,6 +72,29 @@ export default function CourtBookingsPage() {
         );
     }
   };
+
+  const renderActions = (booking: typeof filteredBookings[0]) => {
+    if (booking.status === 'pending') {
+      return (
+         <div className="space-x-2">
+            <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(booking.id, 'approved')}>
+                <Check className="mr-2 h-4 w-4" /> Approve
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(booking.id, 'rejected')}>
+                <X className="mr-2 h-4 w-4" /> Reject
+            </Button>
+        </div>
+      )
+    }
+    if (booking.status === 'approved') {
+        return (
+            <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(booking.id, 'rejected')}>
+                <X className="mr-2 h-4 w-4" /> Cancel Booking
+            </Button>
+        )
+    }
+    return null;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -92,6 +128,7 @@ export default function CourtBookingsPage() {
                   <TableHead>Date</TableHead>
                   <TableHead>Time</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,11 +139,12 @@ export default function CourtBookingsPage() {
                       <TableCell>{new Date(booking.date).toLocaleDateString()}</TableCell>
                       <TableCell>{booking.time}</TableCell>
                       <TableCell>{getStatusBadge(booking.status)}</TableCell>
+                      <TableCell className="text-right">{renderActions(booking)}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24">
+                    <TableCell colSpan={5} className="text-center h-24">
                       No bookings found for this court.
                     </TableCell>
                   </TableRow>
