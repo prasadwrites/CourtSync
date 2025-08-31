@@ -86,3 +86,11 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+.hero-gradient {
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--secondary)), hsl(var(--background)));
+}
+
+.dark .hero-gradient {
+  background: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--secondary)), hsl(var(--background)));
+}
