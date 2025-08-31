@@ -43,6 +43,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const userFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -79,7 +85,7 @@ export default function UsersPage() {
     regeneratePin(userId);
     toast({
       title: 'PIN Regenerated',
-      description: `A new PIN has been generated for ${userName}.`,
+      description: `A new PIN has been regenerated for ${userName}.`,
     });
   }
 
@@ -163,52 +169,60 @@ export default function UsersPage() {
           <CardTitle>All Users</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>PIN</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                      {user.role === 'admin' ? (
-                        <Shield className="mr-2 h-4 w-4" />
-                      ) : (
-                        <User className="mr-2 h-4 w-4" />
-                      )}
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </Badge>
-                  </TableCell>
-                   <TableCell>
-                    <Badge variant="outline" className="font-mono tracking-widest">
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      {user.pin}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRegeneratePin(user.id, user.name, user.role)}
-                      disabled={user.role === 'admin'}
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Regenerate PIN
-                    </Button>
-                  </TableCell>
+          <TooltipProvider>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>PIN</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                        {user.role === 'admin' ? (
+                          <Shield className="mr-2 h-4 w-4" />
+                        ) : (
+                          <User className="mr-2 h-4 w-4" />
+                        )}
+                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="cursor-help">
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-mono tracking-widest">{user.pin}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRegeneratePin(user.id, user.name, user.role)}
+                        disabled={user.role === 'admin'}
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Regenerate PIN
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TooltipProvider>
         </CardContent>
       </Card>
     </div>
