@@ -16,6 +16,7 @@ import {
 import { LayoutDashboard, Users, CalendarCheck, Shield, BookCopy, Building } from 'lucide-react';
 import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user } = useStore();
@@ -66,10 +67,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   isActive={pathname === item.href}
                   tooltip={item.label}
                 >
-                  <a href={item.href}>
+                  <Link href={item.href}>
                     <item.icon />
                     <span>{item.label}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
