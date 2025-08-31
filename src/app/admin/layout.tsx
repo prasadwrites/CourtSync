@@ -38,6 +38,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/users', label: 'User Management', icon: Users },
     { href: '/admin/courts', label: 'Court Management', icon: Shield },
     { href: '/admin/bookings', label: 'Booking Approvals', icon: CalendarCheck },
+    { href: '/admin/court-bookings', label: 'Court Bookings', icon: BookCopy },
   ];
 
   return (
