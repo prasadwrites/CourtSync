@@ -22,6 +22,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useState } from 'react';
 
 export default function CourtBookingsPage() {
@@ -100,20 +111,56 @@ export default function CourtBookingsPage() {
     if (booking.status === 'pending') {
       return (
          <div className="space-x-2">
-            <Button variant="outline" size="sm" onClick={() => handleUpdateStatus(booking.id, 'approved')}>
-                <Check className="mr-2 h-4 w-4" /> Approve
-            </Button>
-            <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(booking.id, 'rejected')}>
-                <X className="mr-2 h-4 w-4" /> Reject
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm"><Check className="mr-2 h-4 w-4" /> Approve</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>This action will approve the booking request.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleUpdateStatus(booking.id, 'approved')}>Approve</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm"><X className="mr-2 h-4 w-4" /> Reject</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>This action will reject the booking request. This cannot be undone.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleUpdateStatus(booking.id, 'rejected')}>Reject</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       )
     }
     if (booking.status === 'approved') {
         return (
-            <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(booking.id, 'rejected')}>
-                <X className="mr-2 h-4 w-4" /> Cancel Booking
-            </Button>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                   <Button variant="destructive" size="sm"><X className="mr-2 h-4 w-4" /> Cancel Booking</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>This action will cancel the approved booking. This cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleUpdateStatus(booking.id, 'rejected')}>Confirm Cancellation</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         )
     }
     return null;
@@ -122,10 +169,9 @@ export default function CourtBookingsPage() {
   const courtBookings = getBookingsForCourt(selectedCourt);
   
   const formatDate = (dateString: string) => {
-    const [year, month, day] = dateString.split('-').map(Number);
     // Constructing date as UTC to avoid timezone shifts
-    const date = new Date(Date.UTC(year, month - 1, day));
-    return date.toLocaleDateString('en-US', { timeZone: 'UTC' });
+    const date = new Date(dateString + 'T00:00:00Z');
+    return date.toLocaleDateString('en-US', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   return (

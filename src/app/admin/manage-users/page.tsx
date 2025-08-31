@@ -251,14 +251,28 @@ export default function ManageUsersPage() {
                             </Tooltip>
                             </TableCell>
                             <TableCell className="text-right space-x-1">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleRegeneratePin(u.id, u.name)}
-                            >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                PIN
-                            </Button>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                        PIN
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action will regenerate the PIN for {u.name}. The user will need to be informed of their new PIN.
+                                    </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleRegeneratePin(u.id, u.name)}>
+                                        Regenerate
+                                    </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                      <Button variant="destructive" size="sm">
