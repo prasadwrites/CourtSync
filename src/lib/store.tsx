@@ -54,7 +54,8 @@ const appReducer = (state: AppState, action: Action): AppState => {
     case 'LOGIN':
       return { ...state, user: action.payload };
     case 'LOGOUT':
-      return { ...state, user: null };
+      // When logging out, we reset the entire state to the initial values
+      return initialState;
     case 'ADD_USER':
       return { ...state, users: [...state.users, action.payload] };
     case 'ADD_COURT':
