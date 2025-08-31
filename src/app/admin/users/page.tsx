@@ -67,7 +67,15 @@ export default function UsersPage() {
     setIsDialogOpen(false);
   }
 
-  function handleRegeneratePin(userId: string, userName: string) {
+  function handleRegeneratePin(userId: string, userName: string, role: 'admin' | 'user') {
+    if (role === 'admin') {
+      toast({
+        variant: 'destructive',
+        title: 'Action Not Allowed',
+        description: `The admin PIN cannot be regenerated.`,
+      });
+      return;
+    }
     regeneratePin(userId);
     toast({
       title: 'PIN Regenerated',
@@ -190,7 +198,8 @@ export default function UsersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRegeneratePin(user.id, user.name)}
+                      onClick={() => handleRegeneratePin(user.id, user.name, user.role)}
+                      disabled={user.role === 'admin'}
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Regenerate PIN

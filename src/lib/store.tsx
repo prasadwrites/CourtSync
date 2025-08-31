@@ -7,7 +7,6 @@ import type { User, Court, Booking } from './types';
 const generatePin = (): string => {
     const numbers = '0123456789';
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let pin = '';
     const chars = [];
     for (let i = 0; i < 3; i++) {
         chars.push(numbers.charAt(Math.floor(Math.random() * numbers.length)));
@@ -24,7 +23,7 @@ const generatePin = (): string => {
 
 // --- INITIAL MOCK DATA ---
 const initialUsers: User[] = [
-  { id: '1', name: 'Admin User', email: 'admin@courtsync.com', role: 'admin', pin: generatePin() },
+  { id: '1', name: 'Admin User', email: 'admin@courtsync.com', role: 'admin', pin: 'ABC123' },
   { id: '2', name: 'Regular User', email: 'user@courtsync.com', role: 'user', pin: generatePin() },
 ];
 
@@ -36,8 +35,8 @@ const initialCourts: Court[] = [
 ];
 
 const initialBookings: Booking[] = [
-  { id: '1', courtId: '1', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], time: '9:00 AM - 10:00 AM', status: 'approved' },
-  { id: '2', courtId: '2', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split('T')[0], time: '2:00 PM - 3:00 PM', status: 'pending' },
+  { id: '1', courtId: '1', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0], time: '9:00 AM', status: 'approved' },
+  { id: '2', courtId: '2', userId: '2', date: new Date(new Date().setDate(new Date().getDate() + 2)).toISOString().split('T')[0], time: '2:00 PM', status: 'pending' },
 ];
 
 // --- STATE AND ACTIONS ---
@@ -124,6 +123,13 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
       const storedState = localStorage.getItem('courtSyncState');
       if (storedState) {
           const parsedState = JSON.parse(storedState);
+          // Ensure admin pin is always correct
+          if (parsedState.users) {
+            const admin = parsedState.users.find((u: User) => u.role === 'admin');
+            if (admin) {
+              admin.pin = 'ABC123';
+            }
+          }
           dispatch({ type: 'SET_INITIAL_STATE', payload: parsedState });
       } else {
         dispatch({ type: 'SET_INITIAL_STATE', payload: initialState });
@@ -172,6 +178,11 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const regeneratePin = (userId: string) => {
+    const user = state.users.find(u => u.id === userId);
+    if (user && user.role === 'admin') {
+        // Do not regenerate PIN for admin
+        return;
+    }
     const newPin = generatePin();
     dispatch({ type: 'REGENERATE_PIN', payload: { userId, newPin } });
   }
