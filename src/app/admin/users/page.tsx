@@ -34,13 +34,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -54,35 +47,29 @@ import {
 const userFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email.' }),
-  role: z.enum(['admin', 'user']),
 });
 
 export default function UsersPage() {
-  const { users, addUser, regeneratePin } = useStore();
+  const { user, users, addUser, regeneratePin } = useStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  const companyUsers = users.filter(u => u.companyId === user?.companyId && u.role ==='user');
+
   const form = useForm<z.infer<typeof userFormSchema>>({
     resolver: zodResolver(userFormSchema),
-    defaultValues: { name: '', email: '', role: 'user' },
+    defaultValues: { name: '', email: '' },
   });
 
   function onSubmit(values: z.infer<typeof userFormSchema>) {
-    addUser(values);
+    if (!user?.companyId) return;
+    addUser({ ...values, role: 'user', companyId: user.companyId });
     toast({ title: 'User Created', description: `User ${values.name} has been added.` });
     form.reset();
     setIsDialogOpen(false);
   }
 
-  function handleRegeneratePin(userId: string, userName: string, role: 'admin' | 'user') {
-    if (role === 'admin') {
-      toast({
-        variant: 'destructive',
-        title: 'Action Not Allowed',
-        description: `The admin PIN cannot be regenerated.`,
-      });
-      return;
-    }
+  function handleRegeneratePin(userId: string, userName: string) {
     regeneratePin(userId);
     toast({
       title: 'PIN Regenerated',
@@ -104,7 +91,7 @@ export default function UsersPage() {
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
               <DialogDescription>
-                Fill in the details to create a new user account. A PIN will be auto-generated.
+                Fill in the details to create a new user account for your company. A PIN will be auto-generated.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -135,27 +122,6 @@ export default function UsersPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="user">User</SelectItem>
-                          <SelectItem value="admin">Administrator</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <DialogFooter>
                   <Button type="submit">Create User</Button>
                 </DialogFooter>
@@ -167,7 +133,7 @@ export default function UsersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Users</CardTitle>
+          <CardTitle>Company Users</CardTitle>
         </CardHeader>
         <CardContent>
           <TooltipProvider>
@@ -182,18 +148,14 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                {companyUsers.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-medium">{u.name}</TableCell>
+                    <TableCell>{u.email}</TableCell>
                     <TableCell>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                        {user.role === 'admin' ? (
-                          <Shield className="mr-2 h-4 w-4" />
-                        ) : (
-                          <User className="mr-2 h-4 w-4" />
-                        )}
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      <Badge variant={'secondary'}>
+                        <User className="mr-2 h-4 w-4" />
+                        User
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -202,7 +164,7 @@ export default function UsersPage() {
                            <span className="cursor-help"><KeyRound className="h-4 w-4" /></span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="font-mono tracking-widest">{user.pin}</p>
+                          <p className="font-mono tracking-widest">{u.pin}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TableCell>
@@ -210,8 +172,7 @@ export default function UsersPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRegeneratePin(user.id, user.name, user.role)}
-                        disabled={user.role === 'admin'}
+                        onClick={() => handleRegeneratePin(u.id, u.name)}
                       >
                         <RefreshCw className="mr-2 h-4 w-4" />
                         Regenerate PIN

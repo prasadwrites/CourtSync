@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -43,9 +44,11 @@ const courtFormSchema = z.object({
 });
 
 export default function CourtsPage() {
-  const { courts, addCourt, deleteCourt } = useStore();
+  const { user, courts, addCourt, deleteCourt } = useStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const companyCourts = courts.filter(c => c.companyId === user?.companyId);
 
   const form = useForm<z.infer<typeof courtFormSchema>>({
     resolver: zodResolver(courtFormSchema),
@@ -53,7 +56,8 @@ export default function CourtsPage() {
   });
 
   function onSubmit(values: z.infer<typeof courtFormSchema>) {
-    addCourt(values);
+    if (!user?.companyId) return;
+    addCourt({ ...values, companyId: user.companyId });
     toast({ title: 'Court Created', description: `Court ${values.name} has been added.` });
     form.reset();
     setIsDialogOpen(false);
@@ -128,7 +132,7 @@ export default function CourtsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Courts</CardTitle>
+          <CardTitle>Company Courts</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -141,7 +145,7 @@ export default function CourtsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {courts.map((court) => (
+              {companyCourts.map((court) => (
                 <TableRow key={court.id}>
                   <TableCell className="font-medium">{court.name}</TableCell>
                   <TableCell>

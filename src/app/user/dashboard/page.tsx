@@ -1,3 +1,4 @@
+
 'use client';
 
 import { recommendCourts, type RecommendCourtsOutput } from '@/ai/flows/court-recommendation';
@@ -129,8 +130,10 @@ function CourtRecommender() {
 }
 
 export default function UserDashboard() {
-  const { courts } = useStore();
+  const { user, courts } = useStore();
   const router = useRouter();
+
+  const companyCourts = courts.filter(c => c.companyId === user?.companyId);
 
   return (
     <div className="flex flex-col gap-8">
@@ -144,7 +147,7 @@ export default function UserDashboard() {
       <div>
         <h2 className="text-2xl font-semibold tracking-tight mb-4">Browse All Courts</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {courts.map((court) => (
+          {companyCourts.map((court) => (
             <Card key={court.id} className="flex flex-col">
               <CardHeader>
                 <CardTitle>{court.name}</CardTitle>

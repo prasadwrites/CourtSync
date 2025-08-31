@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useStore } from '@/lib/store';
@@ -24,9 +25,11 @@ import {
 import { useState } from 'react';
 
 export default function CourtBookingsPage() {
-  const { courts, bookings, users, updateBookingStatus } = useStore();
+  const { user, courts, bookings, users, updateBookingStatus } = useStore();
   const { toast } = useToast();
   const [selectedCourt, setSelectedCourt] = useState<string | null>(null);
+
+  const companyCourts = courts.filter(c => c.companyId === user?.companyId);
 
   const handleUpdateStatus = (bookingId: string, status: 'approved' | 'rejected') => {
     updateBookingStatus(bookingId, status);
@@ -102,7 +105,7 @@ export default function CourtBookingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>View Bookings by Court</CardTitle>
-          <CardDescription>Select a court to see all its pending and approved bookings.</CardDescription>
+          <CardDescription>Select one of your company's courts to see all its pending and approved bookings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
             <div className="max-w-sm">
@@ -111,7 +114,7 @@ export default function CourtBookingsPage() {
                         <SelectValue placeholder="Select a court" />
                     </SelectTrigger>
                     <SelectContent>
-                        {courts.map(court => (
+                        {companyCourts.map(court => (
                             <SelectItem key={court.id} value={court.id}>{court.name}</SelectItem>
                         ))}
                     </SelectContent>

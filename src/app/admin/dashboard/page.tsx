@@ -1,18 +1,43 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStore } from '@/lib/store';
-import { Users, Shield, CalendarClock } from 'lucide-react';
+import { Users, Shield, CalendarClock, Building } from 'lucide-react';
 
 export default function AdminDashboard() {
-  const { users, courts, bookings } = useStore();
-  const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+  const { user, users, courts, bookings, companies } = useStore();
 
-  const stats = [
-    { title: 'Total Users', value: users.length, icon: Users, color: 'text-blue-500' },
-    { title: 'Total Courts', value: courts.length, icon: Shield, color: 'text-green-500' },
+  const isSuperAdmin = !user?.companyId;
+
+  // Super Admin Stats
+  const totalCompanies = companies.length;
+  const totalUsers = users.length;
+  
+  // Company Admin Stats
+  const companyUsers = users.filter(u => u.companyId === user?.companyId).length;
+  const companyCourts = courts.filter(c => c.companyId === user?.companyId).length;
+  const companyBookings = bookings.filter(b => {
+    const court = courts.find(c => c.id === b.courtId);
+    return court?.companyId === user?.companyId;
+  });
+  const pendingBookings = companyBookings.filter(b => b.status === 'pending').length;
+
+  const superAdminStats = [
+    { title: 'Total Companies', value: totalCompanies, icon: Building, color: 'text-purple-500' },
+    { title: 'Total Users (All Companies)', value: totalUsers, icon: Users, color: 'text-blue-500' },
+  ];
+
+  const companyAdminStats = [
+    { title: 'Your Users', value: companyUsers, icon: Users, color: 'text-blue-500' },
+    { title: 'Your Courts', value: companyCourts, icon: Shield, color: 'text-green-500' },
     { title: 'Pending Bookings', value: pendingBookings, icon: CalendarClock, color: 'text-yellow-500' },
   ];
+
+  const stats = isSuperAdmin ? superAdminStats : companyAdminStats;
+  const welcomeMessage = isSuperAdmin 
+    ? "From this dashboard, you can manage all companies on the platform." 
+    : "From this dashboard, you can manage all aspects of your company's courts and bookings.";
 
   return (
     <div className="flex flex-col gap-6">
@@ -31,9 +56,9 @@ export default function AdminDashboard() {
         ))}
       </div>
       <div className="mt-4">
-        <h2 className="text-2xl font-semibold mb-4">Welcome, Administrator!</h2>
+        <h2 className="text-2xl font-semibold mb-4">Welcome, {user?.name}!</h2>
         <p className="text-muted-foreground">
-          From this dashboard, you can manage all aspects of CourtSync. Use the navigation on the left to manage users, courts, and approve booking requests.
+          {welcomeMessage}
         </p>
       </div>
     </div>

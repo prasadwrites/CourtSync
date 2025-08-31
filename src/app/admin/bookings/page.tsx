@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useStore } from '@/lib/store';
@@ -16,11 +17,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 
 export default function BookingsPage() {
-  const { bookings, users, courts, updateBookingStatus } = useStore();
+  const { user, bookings, users, courts, updateBookingStatus } = useStore();
   const { toast } = useToast();
 
+  const companyCourts = courts.filter(c => c.companyId === user?.companyId).map(c => c.id);
+  
   const pendingBookings = bookings
-    .filter((b) => b.status === 'pending')
+    .filter((b) => b.status === 'pending' && companyCourts.includes(b.courtId))
     .map((booking) => ({
       ...booking,
       userName: users.find((u) => u.id === booking.userId)?.name,
@@ -64,7 +67,7 @@ export default function BookingsPage() {
         <CardHeader>
           <CardTitle>Pending Requests</CardTitle>
           <CardDescription>
-            Review and approve or reject the following court booking requests.
+            Review and approve or reject the following court booking requests for your company.
           </CardDescription>
         </CardHeader>
         <CardContent>
