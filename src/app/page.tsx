@@ -72,9 +72,9 @@ export default function Home() {
                   CourtSync simplifies court booking, user management, and scheduling for clubs of all sizes.
                 </p>
                 <div className="space-x-4">
-                   <Link href="#features" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
-                    Learn More
-                  </Link>
+                   <a href="mailto:super@admin.com" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+                    Contact
+                  </a>
                 </div>
               </div>
               <div className="w-full max-w-md mx-auto">
