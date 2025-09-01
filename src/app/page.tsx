@@ -6,10 +6,27 @@ import { Logo } from '@/components/icons/Logo';
 import { useStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarCheck, Users, BarChart3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+
+const features = [
+    {
+      icon: CalendarCheck,
+      title: 'Effortless Booking',
+      description: 'Streamline your court reservations with our intuitive booking system. Less admin, more playtime.',
+    },
+    {
+      icon: Users,
+      title: 'User Management',
+      description: 'Easily manage members, roles, and access permissions for your entire organization.',
+    },
+    {
+      icon: BarChart3,
+      title: 'Actionable Insights',
+      description: 'Gain valuable insights into court usage and peak hours to optimize your operations.',
+    },
+  ];
 
 export default function Home() {
   const { user } = useStore();
@@ -24,24 +41,6 @@ export default function Home() {
       }
     }
   }, [user, router]);
-
-  const features = [
-    {
-      icon: <CalendarCheck className="h-8 w-8 text-primary" />,
-      title: 'Effortless Booking',
-      description: 'Streamline your court reservations with our intuitive booking system. Less admin, more playtime.',
-    },
-    {
-      icon: <Users className="h-8 w-8 text-primary" />,
-      title: 'User Management',
-      description: 'Easily manage members, roles, and access permissions for your entire organization.',
-    },
-    {
-      icon: <BarChart3 className="h-8 w-8 text-primary" />,
-      title: 'Actionable Insights',
-      description: 'Gain valuable insights into court usage and peak hours to optimize your operations.',
-    },
-  ];
   
   if (user) {
     return null; // or a loading spinner
@@ -50,10 +49,10 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="px-4 lg:px-6 h-14 flex items-center">
-        <a className="flex items-center justify-center" href="#">
+        <Link className="flex items-center justify-center" href="#">
           <Logo className="h-6 w-6" />
           <span className="ml-2 text-lg font-semibold">CourtSync</span>
-        </a>
+        </Link>
       </header>
       <main className="flex-1">
         <section className="relative w-full pt-12 md:pt-24 lg:pt-32 hero-gradient">
@@ -67,7 +66,9 @@ export default function Home() {
                   CourtSync simplifies court booking, user management, and scheduling for clubs of all sizes.
                 </p>
                 <div className="space-x-4">
-                  <Button size="lg">Get Started</Button>
+                   <Link href="#features" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+                    Learn More
+                  </Link>
                 </div>
               </div>
               <div className="w-full max-w-md mx-auto">
@@ -97,15 +98,18 @@ export default function Home() {
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl justify-items-center gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3 pt-12">
-              {features.map((feature, index) => (
-                <div key={index} className="flex flex-col items-center text-center gap-2 p-4 max-w-xs">
-                  <div className="bg-primary/10 p-3 rounded-full">
-                     {feature.icon}
-                  </div>
-                  <h3 className="text-lg font-bold">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
-                </div>
-              ))}
+              {features.map((feature, index) => {
+                const Icon = feature.icon;
+                return (
+                    <div key={index} className="flex flex-col items-center text-center gap-2 p-4 max-w-xs">
+                    <div className="bg-primary/10 p-3 rounded-full">
+                        <Icon className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-bold">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                    </div>
+                )
+              })}
             </div>
           </div>
         </section>
