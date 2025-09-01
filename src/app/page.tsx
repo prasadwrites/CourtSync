@@ -123,8 +123,12 @@ export default function Home() {
           <a className="text-xs hover:underline underline-offset-4" href="#">
             Privacy
           </a>
+          <a className="text-xs hover:underline underline-offset-4" href="mailto:super@admin.com">
+            Contact Super Admin
+          </a>
         </nav>
       </footer>
     </div>
   );
 }
+
