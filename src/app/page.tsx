@@ -9,7 +9,6 @@ import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarCheck, Users, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 
 const features = [
     {
@@ -54,11 +53,6 @@ export default function Home() {
           <Logo className="h-6 w-6" />
           <span className="ml-2 text-lg font-semibold">CourtSync</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Button asChild variant="outline">
-            <a href="mailto:super@admin.com">Contact</a>
-          </Button>
-        </nav>
       </header>
       <main className="flex-1">
         <section className="relative w-full pt-12 md:pt-24 lg:pt-32 hero-gradient">
@@ -123,6 +117,9 @@ export default function Home() {
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
         <p className="text-xs text-muted-foreground">&copy; 2024 CourtSync. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+          <a className="text-xs hover:underline underline-offset-4" href="mailto:super@admin.com">
+            Contact Super Admin
+          </a>
           <a className="text-xs hover:underline underline-offset-4" href="#">
             Terms of Service
           </a>
