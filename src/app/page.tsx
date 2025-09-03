@@ -58,7 +58,7 @@ export default function Home() {
         <section className="relative w-full pt-12 md:pt-24 lg:pt-32 hero-gradient">
           <div className="container px-4 md:px-6 space-y-10 xl:space-y-16">
             <div>
-              <div className="grid max-w-[1300px] mx-auto gap-8 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16 items-center">
+              <div className="grid max-w-[1300px] mx-auto gap-8 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16 items-start">
                 <div className="flex flex-col justify-center space-y-4 text-center md:text-left">
                   <h1 className="lg:leading-tighter text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-[3.4rem] 2xl:text-[3.75rem]">
                     The Ultimate Court Management Platform
@@ -120,7 +120,7 @@ export default function Home() {
         <p className="text-xs text-muted-foreground">&copy; 2024 CourtSync. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <a className="text-xs hover:underline underline-offset-4" href="mailto:super@admin.com">
-            Contact Super Admin
+            Contact
           </a>
           <a className="text-xs hover:underline underline-offset-4" href="#">
             Terms of Service
