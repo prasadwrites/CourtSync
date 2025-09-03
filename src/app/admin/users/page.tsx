@@ -37,12 +37,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const userFormSchema = z.object({
@@ -53,6 +47,7 @@ const userFormSchema = z.object({
 export default function UsersPage() {
   const { user, users, addUser, regeneratePin } = useStore();
   const [isUserDialogOpen, setUserDialogOpen] = useState(false);
+  const [visiblePin, setVisiblePin] = useState<string | null>(null);
   const { toast } = useToast();
 
   const companyUsers = users.filter(u => u.companyId === user?.companyId && u.role ==='user');
@@ -77,6 +72,10 @@ export default function UsersPage() {
       description: `A new PIN has been regenerated for ${userName}.`,
     });
   }
+
+  const togglePinVisibility = (userId: string) => {
+    setVisiblePin(visiblePin === userId ? null : userId);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -137,7 +136,6 @@ export default function UsersPage() {
           <CardTitle>Company Users</CardTitle>
         </CardHeader>
         <CardContent>
-          <TooltipProvider>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -161,14 +159,16 @@ export default function UsersPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                           <span className="cursor-help"><KeyRound className="h-4 w-4" /></span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-mono tracking-widest">{u.pin}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      <div className="flex items-center gap-2">
+                          {visiblePin === u.id ? (
+                              <span className="font-mono tracking-widest">{u.pin}</span>
+                          ) : (
+                              <span className="font-mono tracking-widest">••••••</span>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => togglePinVisibility(u.id)}>
+                              <KeyRound className="h-4 w-4" />
+                          </Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                         <div className="flex items-center gap-2">
@@ -207,7 +207,6 @@ export default function UsersPage() {
                 ))}
               </TableBody>
             </Table>
-          </TooltipProvider>
         </CardContent>
       </Card>
     </div>

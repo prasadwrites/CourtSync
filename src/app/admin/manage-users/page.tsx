@@ -55,12 +55,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import type { User as UserType } from '@/lib/types';
 
 
@@ -74,6 +68,7 @@ export default function ManageUsersPage() {
   const { companies, users, addUser, deleteUser, regeneratePin } = useStore();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
+  const [visiblePin, setVisiblePin] = useState<string | null>(null);
   const { toast } = useToast();
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
@@ -109,6 +104,10 @@ export default function ManageUsersPage() {
       description: `User ${user.name} has been removed from ${selectedCompany?.name}.`,
     });
   }
+
+  const togglePinVisibility = (userId: string) => {
+    setVisiblePin(visiblePin === userId ? null : userId);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -218,7 +217,6 @@ export default function ManageUsersPage() {
             </div>
 
             {selectedCompanyId && (
-            <TooltipProvider>
                 <Table>
                 <TableHeader>
                     <TableRow>
@@ -243,14 +241,16 @@ export default function ManageUsersPage() {
                             </Badge>
                             </TableCell>
                             <TableCell>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                <span className="cursor-help"><KeyRound className="h-4 w-4" /></span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                <p className="font-mono tracking-widest">{u.pin}</p>
-                                </TooltipContent>
-                            </Tooltip>
+                                <div className="flex items-center gap-2">
+                                    {visiblePin === u.id ? (
+                                        <span className="font-mono tracking-widest">{u.pin}</span>
+                                    ) : (
+                                        <span className="font-mono tracking-widest">••••••</span>
+                                    )}
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => togglePinVisibility(u.id)}>
+                                        <KeyRound className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </TableCell>
                             <TableCell>
                                 <div className="flex items-center gap-2">
@@ -315,7 +315,6 @@ export default function ManageUsersPage() {
                     )}
                 </TableBody>
                 </Table>
-            </TooltipProvider>
             )}
         </CardContent>
        </Card>

@@ -36,12 +36,6 @@ import {
 } from '@/components/ui/form';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 const companyFormSchema = z.object({
   companyName: z.string().min(3, { message: 'Company name must be at least 3 characters.' }),
@@ -52,6 +46,7 @@ const companyFormSchema = z.object({
 export default function CompaniesPage() {
   const { companies, users, addCompanyAndAdmin } = useStore();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [visiblePin, setVisiblePin] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof companyFormSchema>>({
@@ -77,6 +72,10 @@ export default function CompaniesPage() {
   
   const getCompanyAdmin = (companyId: string) => {
     return users.find(u => u.companyId === companyId && u.role === 'admin');
+  }
+  
+  const togglePinVisibility = (adminId: string) => {
+    setVisiblePin(visiblePin === adminId ? null : adminId);
   }
 
   return (
@@ -151,7 +150,6 @@ export default function CompaniesPage() {
           <CardTitle>All Companies</CardTitle>
         </CardHeader>
         <CardContent>
-          <TooltipProvider>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -181,14 +179,16 @@ export default function CompaniesPage() {
                             <TableCell>{admin?.name || 'N/A'}</TableCell>
                             <TableCell>
                                 {admin && (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                        <span className="cursor-help"><KeyRound className="h-4 w-4" /></span>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                        <p className="font-mono tracking-widest">{admin.pin}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
+                                   <div className="flex items-center gap-2">
+                                        {visiblePin === admin.id ? (
+                                            <span className="font-mono tracking-widest">{admin.pin}</span>
+                                        ) : (
+                                            <span className="font-mono tracking-widest">••••••</span>
+                                        )}
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => togglePinVisibility(admin.id)}>
+                                            <KeyRound className="h-4 w-4" />
+                                        </Button>
+                                   </div>
                                 )}
                             </TableCell>
                         </TableRow>
@@ -196,7 +196,6 @@ export default function CompaniesPage() {
                 })}
               </TableBody>
             </Table>
-          </TooltipProvider>
         </CardContent>
       </Card>
     </div>
