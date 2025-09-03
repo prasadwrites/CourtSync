@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { useStore } from '@/lib/store';
 import {
+  useSidebar,
   SidebarProvider,
   Sidebar,
   SidebarHeader,
@@ -18,24 +19,18 @@ import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+function AdminSidebarMenu() {
   const { user } = useStore();
-  const router = useRouter();
   const pathname = usePathname();
+  const { setOpenMobile, isMobile } = useSidebar();
 
-  useEffect(() => {
-    if (!user) {
-      router.replace('/');
-    } else if (user.role !== 'admin') {
-      router.replace('/user/dashboard');
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
     }
-  }, [user, router]);
-  
-  if (!user || user.role !== 'admin') {
-    return null; // or a loading spinner
-  }
+  };
 
-  const isSuperAdmin = !user.companyId;
+  const isSuperAdmin = !user?.companyId;
 
   const superAdminMenuItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -58,28 +53,49 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const menuItems = isSuperAdmin ? superAdminMenuItems : companyAdminMenuItems;
 
   return (
+    <SidebarMenu>
+      {menuItems.map((item) => (
+        <SidebarMenuItem key={item.href} onClick={handleLinkClick}>
+          <Link href={item.href} passHref>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === item.href}
+              tooltip={item.label}
+            >
+              <span>
+                <item.icon />
+                <span>{item.label}</span>
+              </span>
+            </SidebarMenuButton>
+          </Link>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  )
+}
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  const { user } = useStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.replace('/');
+    } else if (user.role !== 'admin') {
+      router.replace('/user/dashboard');
+    }
+  }, [user, router]);
+  
+  if (!user || user.role !== 'admin') {
+    return null; // or a loading spinner
+  }
+
+  return (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader />
         <SidebarContent>
-          <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href} passHref>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    tooltip={item.label}
-                  >
-                    <span>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
+          <AdminSidebarMenu />
         </SidebarContent>
       </Sidebar>
       <SidebarInset>

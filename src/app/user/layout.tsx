@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { useStore } from '@/lib/store';
 import {
+  useSidebar,
   SidebarProvider,
   Sidebar,
   SidebarHeader,
@@ -18,10 +19,46 @@ import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
+function UserSidebarMenu() {
+  const pathname = usePathname();
+  const { setOpenMobile, isMobile } = useSidebar();
+  
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  const menuItems = [
+    { href: '/user/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/user/bookings', label: 'My Bookings', icon: BookCopy },
+  ];
+
+  return (
+     <SidebarMenu>
+      {menuItems.map((item) => (
+        <SidebarMenuItem key={item.href} onClick={handleLinkClick}>
+          <Link href={item.href} passHref>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname === item.href}
+              tooltip={item.label}
+            >
+                <span>
+                <item.icon />
+                <span>{item.label}</span>
+              </span>
+            </SidebarMenuButton>
+          </Link>
+        </SidebarMenuItem>
+      ))}
+    </SidebarMenu>
+  )
+}
+
 export default function UserLayout({ children }: { children: ReactNode }) {
   const { user } = useStore();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     if (!user) {
@@ -34,35 +71,13 @@ export default function UserLayout({ children }: { children: ReactNode }) {
   if (!user || user.role !== 'user') {
     return null; // or a loading spinner
   }
-  
-  const menuItems = [
-    { href: '/user/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/user/bookings', label: 'My Bookings', icon: BookCopy },
-  ];
 
   return (
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader />
         <SidebarContent>
-          <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href} passHref>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    tooltip={item.label}
-                  >
-                     <span>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
+          <UserSidebarMenu />
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
