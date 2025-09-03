@@ -57,30 +57,32 @@ export default function Home() {
       <main className="flex-1">
         <section className="relative w-full pt-12 md:pt-24 lg:pt-32 hero-gradient">
           <div className="container px-4 md:px-6 space-y-10 xl:space-y-16">
-            <div className="grid max-w-[1300px] mx-auto gap-8 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16 items-center">
-              <div className="flex flex-col justify-center space-y-4 text-center md:text-left">
-                <h1 className="lg:leading-tighter text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-[3.4rem] 2xl:text-[3.75rem]">
-                  The Ultimate Court Management Platform
-                </h1>
-                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  CourtSync simplifies court booking, user management, and scheduling for clubs of all sizes.
-                </p>
-                <div className="space-x-4">
-                   <a href="mailto:super@admin.com" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
-                    Contact for a demo
-                  </a>
+            <div>
+              <div className="grid max-w-[1300px] mx-auto gap-8 px-4 sm:px-6 md:px-10 md:grid-cols-2 md:gap-16 items-center">
+                <div className="flex flex-col justify-center space-y-4 text-center md:text-left">
+                  <h1 className="lg:leading-tighter text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl xl:text-[3.4rem] 2xl:text-[3.75rem]">
+                    The Ultimate Court Management Platform
+                  </h1>
+                  <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                    CourtSync simplifies court booking, user management, and scheduling for clubs of all sizes.
+                  </p>
+                  <div className="space-x-4">
+                    <a href="mailto:super@admin.com" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+                      Contact for a demo
+                    </a>
+                  </div>
                 </div>
-              </div>
-              <div className="w-full max-w-md mx-auto">
-                <Card>
-                  <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Welcome Back</CardTitle>
-                    <CardDescription>Sign in to your account to continue.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <LoginForm />
-                  </CardContent>
-                </Card>
+                <div className="w-full max-w-md mx-auto">
+                  <Card>
+                    <CardHeader className="text-center">
+                      <CardTitle className="text-2xl">Welcome Back</CardTitle>
+                      <CardDescription>Sign in to your account to continue.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <LoginForm />
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
           </div>
