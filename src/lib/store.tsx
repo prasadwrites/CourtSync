@@ -36,7 +36,7 @@ const initialCompanies: Company[] = [
 ];
 
 const initialUsers: User[] = [
-  { id: '1', name: 'Super Admin', email: 'super@admin.com', role: 'admin', pin: 'ABC123', credits: 999 },
+  { id: '1', name: 'Super Admin', email: 'temporary.5016@gmail.com', role: 'admin', pin: 'ABC123', credits: 999 },
   { id: '2', name: 'Default Company Admin', email: 'admin@courtsync.com', role: 'admin', pin: 'ADM456', companyId: '1', credits: 999 },
   { id: '3', name: 'Regular User', email: 'user@courtsync.com', role: 'user', pin: generatePin(), companyId: '1', credits: 5 },
 ];
@@ -203,7 +203,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
           const parsedState = JSON.parse(storedState);
           // Ensure super admin pin is always correct
           if (parsedState.users) {
-            const superAdmin = parsedState.users.find((u: User) => u.email === 'super@admin.com');
+            const superAdmin = parsedState.users.find((u: User) => u.email === 'temporary.5016@gmail.com');
             if (superAdmin) {
               superAdmin.pin = 'ABC123';
             }
