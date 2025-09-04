@@ -4,31 +4,59 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, CreditCard } from 'lucide-react';
+import { Check, CreditCard, Star } from 'lucide-react';
 import Link from 'next/link';
 
 const creditPackages = [
   {
-    name: 'Starter Pack',
-    credits: 10,
+    name: '1 Credit',
+    credits: 1,
     price: 100,
-    features: ['Perfect for casual players'],
+    features: ['Book one session'],
     gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=100&cu=INR',
   },
   {
-    name: 'Player Pack',
-    credits: 25,
-    price: 225,
-    features: ['10% discount', 'Ideal for regular players'],
-    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=225&cu=INR',
+    name: '2 Credits',
+    credits: 2,
+    price: 200,
+    features: ['Two sessions'],
+    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=200&cu=INR',
+  },
+  {
+    name: '3 Credits',
+    credits: 3,
+    price: 300,
+    features: ['Three sessions'],
+    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=300&cu=INR',
+  },
+  {
+    name: '4 Credits',
+    credits: 4,
+    price: 400,
+    features: ['Four sessions'],
+    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=400&cu=INR',
+  },
+   {
+    name: '5 Credits',
+    credits: 5,
+    price: 500,
+    features: ['Perfect for a week'],
+    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=500&cu=INR',
     popular: true,
   },
   {
-    name: 'Pro Pack',
-    credits: 50,
-    price: 400,
-    features: ['20% discount', 'Best value for frequent players'],
-    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=400&cu=INR',
+    name: '10 Credits',
+    credits: 10,
+    price: 1000,
+    features: ['Great value pack'],
+    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=1000&cu=INR',
+  },
+  {
+    name: '20 Credits',
+    credits: 20,
+    price: 2000,
+    features: ['For dedicated players'],
+    gpayLink: 'gpay://upi/pay?pa=7907542025@okbizaxis&pn=CourtSync%20Credits&am=2000&cu=INR',
   },
 ];
 
@@ -42,11 +70,13 @@ export default function BuyCreditsPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {creditPackages.map((pkg) => (
-          <Card key={pkg.name} className={`flex flex-col ${pkg.popular ? 'border-primary' : ''}`}>
+          <Card key={pkg.name} className={`flex flex-col ${pkg.popular ? 'border-primary ring-2 ring-primary' : ''}`}>
             {pkg.popular && (
-              <Badge className="absolute -top-3 self-center px-3 py-1">POPULAR</Badge>
+              <Badge className="absolute -top-3 self-center px-3 py-1 flex items-center gap-1">
+                <Star className="h-4 w-4" /> POPULAR
+              </Badge>
             )}
             <CardHeader>
               <CardTitle>{pkg.name}</CardTitle>
