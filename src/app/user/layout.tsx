@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, BookCopy } from 'lucide-react';
+import { LayoutDashboard, BookCopy, CreditCard } from 'lucide-react';
 import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -32,6 +32,7 @@ function UserSidebarMenu() {
   const menuItems = [
     { href: '/user/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/user/bookings', label: 'My Bookings', icon: BookCopy },
+    { href: '/user/buy-credits', label: 'Buy Credits', icon: CreditCard },
   ];
 
   return (
