@@ -22,7 +22,7 @@ import { useStore } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Eye, EyeOff, Info } from 'lucide-react';
 
 const FormSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email.' }),
@@ -41,6 +41,7 @@ export function LoginForm() {
   const router = useRouter();
   const { login, superAdminLogin } = useStore();
   const { toast } = useToast();
+  const [showPin, setShowPin] = React.useState(false);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -132,7 +133,25 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>PIN</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••" {...field} maxLength={6} />
+                <div className="relative">
+                    <Input 
+                      type={showPin ? 'text' : 'password'} 
+                      placeholder="••••••" 
+                      {...field} 
+                      maxLength={6}
+                      className="pr-10"
+                    />
+                    <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowPin(prev => !prev)}
+                    >
+                        {showPin ? <EyeOff /> : <Eye />}
+                        <span className="sr-only">{showPin ? 'Hide PIN' : 'Show PIN'}</span>
+                    </Button>
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
