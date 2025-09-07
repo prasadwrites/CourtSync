@@ -67,10 +67,7 @@ export default function Home() {
                   <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
                     CourtSync simplifies court booking, user management, and scheduling for clubs of all sizes.
                   </p>
-                  <div className="space-y-2 md:space-y-0 md:space-x-4 flex flex-col md:flex-row items-center justify-center md:justify-start">
-                    <a href="mailto:temporary.5016@gmail.com" className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 w-full md:w-auto">
-                      Contact for a demo
-                    </a>
+                  <div className="space-y-2 md:space-y-0 flex flex-col md:flex-row items-center justify-center md:justify-start">
                     <a href="https://wa.me/14259986255" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 w-full md:w-auto">
                       Chat on WhatsApp
                     </a>
