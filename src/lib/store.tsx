@@ -203,7 +203,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
           const parsedState = JSON.parse(storedState);
           // Ensure super admin pin is always correct
           if (parsedState.users) {
-            const superAdmin = parsedState.users.find((u: User) => u.email === 'temporary.5016@gmail.com');
+            const superAdmin = parsedState.users.find((u: User) => u.email === 'temporary.5016@gmail.com' && !u.companyId);
             if (superAdmin) {
               superAdmin.pin = 'ABC123';
             }
