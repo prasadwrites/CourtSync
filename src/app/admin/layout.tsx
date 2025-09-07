@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Users, CalendarCheck, Shield, BookCopy, Building, UserCog, Sprout, BookUser, Coins } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarCheck, Shield, BookCopy, Building, UserCog, Sprout, BookUser, Coins, Clapperboard } from 'lucide-react';
 import { Header } from '@/components/shared/Header';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -38,6 +38,7 @@ function AdminSidebarMenu() {
     { href: '/admin/manage-users', label: 'Manage Users', icon: UserCog },
     { href: '/admin/manage-courts', label: 'Manage Courts', icon: Sprout },
     { href: '/admin/manage-credits', label: 'Manage Credits', icon: Coins },
+    { href: '/admin/marketing-video', label: 'Marketing Video', icon: Clapperboard },
   ];
 
   const companyAdminMenuItems = [
