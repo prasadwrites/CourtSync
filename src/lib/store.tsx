@@ -203,9 +203,9 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
           const parsedState = JSON.parse(storedState);
           // Ensure super admin pin is always correct
           if (parsedState.users) {
-            const superAdmin = parsedState.users.find((u: User) => u.email === 'temporary.5016@gmail.com' && !u.companyId);
-            if (superAdmin) {
-              superAdmin.pin = 'ABC123';
+            const superAdminIndex = parsedState.users.findIndex((u: User) => u.email === 'temporary.5016@gmail.com' && !u.companyId);
+            if (superAdminIndex > -1) {
+              parsedState.users[superAdminIndex].pin = 'ABC123';
             }
              // Initialize credits if they don't exist
             parsedState.users = parsedState.users.map((u: User) => ({
@@ -410,3 +410,5 @@ export const useStore = () => {
   }
   return context;
 };
+
+    
