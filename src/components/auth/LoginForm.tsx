@@ -165,7 +165,7 @@ export function LoginForm() {
                 <FormItem>
                 <FormLabel>Company Code</FormLabel>
                 <FormControl>
-                    <Input placeholder="Enter company code" {...field} />
+                    <Input placeholder="Enter company code" {...field} disabled={role !== 'admin'} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
