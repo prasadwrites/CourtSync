@@ -29,12 +29,6 @@ const FormSchema = z.object({
   pin: z.string().min(6, { message: 'PIN must be 6 characters.' }).max(6),
   role: z.enum(['admin', 'user'], { required_error: 'You need to select a role.' }),
   companyCode: z.string().optional(),
-}).refine(data => {
-    // companyCode is required if role is admin but not for a user.
-    return data.role !== 'admin' || (data.role === 'admin');
-}, {
-    message: "Company code is required for admins.",
-    path: ["companyCode"],
 });
 
 export function LoginForm() {
