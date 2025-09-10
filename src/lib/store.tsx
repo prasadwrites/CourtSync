@@ -177,7 +177,6 @@ const appReducer = (state: AppState, action: Action): AppState => {
 // --- CONTEXT AND PROVIDER ---
 interface StoreContextValue extends AppState {
   login: (email: string, pin: string, role: 'admin' | 'user', companyCode?: string) => boolean;
-  superAdminLogin: (email: string, pin: string) => boolean;
   logout: () => void;
   addUser: (user: Omit<User, 'id' | 'pin' | 'credits'>) => void;
   deleteUser: (userId: string) => void;
@@ -246,36 +245,44 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   }, [state, isInitialized]);
 
 
-  const login = (email: string, pin: string, role: 'admin' | 'user', companyCode?: string) => {
-    if (role === 'user') {
-      const user = state.users.find(u => u.email === email && u.pin === pin && u.role === 'user');
-      if (user) {
-        dispatch({ type: 'LOGIN', payload: { user } });
-        return true;
-      }
-      return false;
-    }
-    
-    // Admin login
-    const company = state.companies.find(c => c.companyCode === companyCode);
-    if (!company) return false;
-    
-    const user = state.users.find((u) => u.email === email && u.pin === pin && u.role === role && u.companyId === company.id);
-    if (user) {
-      dispatch({ type: 'LOGIN', payload: { user } });
-      return true;
-    }
-    return false;
-  };
+  const login = (email: string, pin: string, role: 'admin' | 'user', companyCode?: string): boolean => {
+    let foundUser: User | undefined;
 
-  const superAdminLogin = (email: string, pin: string) => {
-    const user = state.users.find((u) => u.email === email && u.pin === pin && u.role === 'admin' && !u.companyId);
-     if (user) {
-      dispatch({ type: 'LOGIN', payload: { user } });
-      return true;
+    if (role === 'admin' && !companyCode) {
+        // Super Admin Login
+        foundUser = state.users.find(u => 
+            u.email === email && 
+            u.pin === pin && 
+            u.role === 'admin' && 
+            !u.companyId
+        );
+    } else if (role === 'admin' && companyCode) {
+        // Company Admin Login
+        const company = state.companies.find(c => c.companyCode === companyCode);
+        if (company) {
+            foundUser = state.users.find(u => 
+                u.email === email && 
+                u.pin === pin && 
+                u.role === 'admin' && 
+                u.companyId === company.id
+            );
+        }
+    } else if (role === 'user') {
+        // Regular User Login
+        foundUser = state.users.find(u => 
+            u.email === email && 
+            u.pin === pin && 
+            u.role === 'user'
+        );
     }
+
+    if (foundUser) {
+        dispatch({ type: 'LOGIN', payload: { user: foundUser } });
+        return true;
+    }
+
     return false;
-  }
+};
 
   const logout = () => {
     dispatch({ type: 'LOGOUT' });
@@ -396,7 +403,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <StoreContext.Provider value={{ ...state, login, superAdminLogin, logout, addUser, deleteUser, addCourt, deleteCourt, addBooking, updateBookingStatus, regeneratePin, addCompanyAndAdmin, updateUserCredits }}>
+    <StoreContext.Provider value={{ ...state, login, logout, addUser, deleteUser, addCourt, deleteCourt, addBooking, updateBookingStatus, regeneratePin, addCompanyAndAdmin, updateUserCredits }}>
       {children}
     </StoreContext.Provider>
   );

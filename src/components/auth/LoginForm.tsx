@@ -33,7 +33,7 @@ const FormSchema = z.object({
 
 export function LoginForm() {
   const router = useRouter();
-  const { login, superAdminLogin } = useStore();
+  const { login } = useStore();
   const { toast } = useToast();
   const [showPin, setShowPin] = React.useState(false);
 
@@ -50,14 +50,7 @@ export function LoginForm() {
   const role = form.watch("role");
 
   const onSubmit = (data: z.infer<typeof FormSchema>) => {
-    let success = false;
-    // If the role is admin and there is no company code, it's a super admin.
-    if (data.role === 'admin' && !data.companyCode) {
-        success = superAdminLogin(data.email, data.pin);
-    } else {
-        // Otherwise it is a company admin or a user.
-        success = login(data.email, data.pin, data.role, data.companyCode);
-    }
+    const success = login(data.email, data.pin, data.role, data.companyCode);
     
     if (success) {
       toast({
