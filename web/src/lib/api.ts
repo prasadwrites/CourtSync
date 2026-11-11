@@ -56,6 +56,14 @@ function authMessage(code: string): string {
     'auth/popup-closed-by-user': 'The sign-in window was closed.',
     'auth/requires-recent-login': 'For security, sign in again before changing your password.',
     'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/unauthorized-domain': 'This website address is not authorised for sign-in. Add it under Authentication > Settings > Authorized domains in the Firebase console.',
+    'auth/operation-not-allowed': 'This sign-in method is not turned on. Enable it under Authentication > Sign-in method in the Firebase console.',
+    'auth/popup-blocked': 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.',
+    'auth/cancelled-popup-request': 'The sign-in window was closed.',
+    'auth/invalid-api-key': 'The Firebase API key is wrong. Check VITE_FIREBASE_API_KEY and redeploy.',
+    'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'The Firebase API key is wrong. Check VITE_FIREBASE_API_KEY and redeploy.',
+    'auth/configuration-not-found': 'Sign-in is not set up for this project. Open Authentication in the Firebase console and click Get started.',
+    'auth/internal-error': 'Sign-in hit an internal error. Check the Firebase web config and sign-in settings.',
   };
-  return map[code] ?? 'Sign-in failed. Please try again.';
+  return map[code] ?? `Sign-in failed (${code}). Please try again.`;
 }
