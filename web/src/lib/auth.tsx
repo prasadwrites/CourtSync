@@ -39,9 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (u: User, force = false) => {
+  const load = useCallback(async (u: User) => {
     try {
-      const token = await u.getIdTokenResult(force);
+      // Always fetch a fresh token so a newly granted Super Admin claim shows up at sign-in.
+      const token = await u.getIdTokenResult(true);
       const res = await call<EnsureResult>('ensureProfile', {});
       setInfo({ ...res, superAdmin: token.claims.superAdmin === true });
       setError(null);
@@ -87,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       refresh: async () => {
-        if (auth.currentUser) await load(auth.currentUser, true);
+        if (auth.currentUser) await load(auth.currentUser);
       },
       signOut: async () => {
         await fbSignOut(auth);
