@@ -337,11 +337,16 @@ service cloud.firestore {
     // Let a customer list their own records across every company they use.
 
     match /{path=**}/customers/{uid} {
-      allow read: if isSelf(uid);
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
     match /{path=**}/staff/{uid} {
-      allow read: if isSelf(uid);
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // Platform reports aggregate every company's daily stats.
+    match /{path=**}/stats/{statId} {
+      allow read: if isSuper();
     }
 
     match /{path=**}/bookings/{bookingId} {
