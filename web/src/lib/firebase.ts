@@ -17,6 +17,9 @@ export const firebaseConfig = {
   measurementId: env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
+/** True in a production build that was made without the Firebase web config (web/.env.local). */
+export const configMissing = env.PROD && !env.VITE_FIREBASE_API_KEY && env.VITE_USE_EMULATORS !== 'true';
+
 export const useEmulators = env.VITE_USE_EMULATORS === 'true' || firebaseConfig.projectId.startsWith('demo-');
 
 export const app = initializeApp(firebaseConfig);
