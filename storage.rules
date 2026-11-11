@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// CourtSync Cloud Storage rules.
+// - Public company media (logo, facility and court photos) is world-readable and written by managers.
+// - Identity documents are written by the customer they belong to and read only by that customer
+//   and the company's verification reviewers. They are never public.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function staffRole(cid) {
+      return firestore.get(/databases/(default)/documents/companies/$(cid)/staff/$(request.auth.uid)).data.role;
+    }
+
+    function staffActive(cid) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/companies/$(cid)/staff/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/companies/$(cid)/staff/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/(png|jpeg|webp|gif)');
+    }
+
+    function underMB(mb) {
+      return request.resource.size < mb * 1024 * 1024;
+    }
+
+    // Company logos and facility/court photos.
+    match /companies/{cid}/public/{allPaths=**} {
+      allow read: if true;
+      allow write: if staffActive(cid)
+        && staffRole(cid) in ['owner', 'admin', 'manager']
+        && (request.resource == null || (isImage() && underMB(5)));
+    }
+
+    // Identity documents for customer verification.
+    match /companies/{cid}/verifications/{uid}/{fileName} {
+      allow read: if (signedIn() && request.auth.uid == uid)
+        || (staffActive(cid) && staffRole(cid) in ['owner', 'admin', 'manager']);
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && (isImage() || request.resource.contentType == 'application/pdf')
+        && underMB(10);
+      allow update, delete: if false;
+    }
+
+    // Profile photos.
+    match /users/{uid}/avatar/{fileName} {
+      allow read: if true;
+      allow write: if signedIn() && request.auth.uid == uid
+        && (request.resource == null || (isImage() && underMB(2)));
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

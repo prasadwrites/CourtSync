@@ -1,0 +1,363 @@
+rules_version = '2';
+
+// CourtSync Firestore security rules.
+//
+// Principles:
+// - Everything is denied unless a rule below allows it.
+// - Money, bookings, credits, memberships, verification, staff and company lifecycle are written
+//   only by Cloud Functions (Admin SDK bypasses these rules). Clients can read what they own.
+// - Company staff are resolved from companies/{cid}/staff/{uid}. Role lists mirror
+//   shared/src/permissions.ts; update both together.
+// - Super Admins carry the `superAdmin` custom claim, set only by functions or the bootstrap script.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------ helpers ---
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isSuper() {
+      return signedIn() && request.auth.token.superAdmin == true;
+    }
+
+    function companyPath(cid) {
+      return /databases/$(database)/documents/companies/$(cid);
+    }
+
+    function company(cid) {
+      return get(companyPath(cid)).data;
+    }
+
+    function companyPublic(cid) {
+      return exists(companyPath(cid)) && company(cid).status == 'active';
+    }
+
+    function staffPath(cid) {
+      return /databases/$(database)/documents/companies/$(cid)/staff/$(request.auth.uid);
+    }
+
+    function isStaff(cid) {
+      return signedIn() && exists(staffPath(cid)) && get(staffPath(cid)).data.status == 'active';
+    }
+
+    function hasRole(cid, roles) {
+      return isStaff(cid) && get(staffPath(cid)).data.role in roles;
+    }
+
+    // Staff writes are only allowed while the company is active or inactive (not suspended or disabled).
+    function companyWritable(cid) {
+      return company(cid).status in ['active', 'inactive'];
+    }
+
+    function adminRoles() {
+      return ['owner', 'admin'];
+    }
+
+    function managerRoles() {
+      return ['owner', 'admin', 'manager'];
+    }
+
+    function changedOnly(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    function isStr(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    function optStr(data, key, max) {
+      return !(key in data) || data[key] == null || isStr(data[key], max);
+    }
+
+    function isMinute(v) {
+      return v is int && v >= 0 && v <= 1440;
+    }
+
+    // ---------------------------------------------- platform master data ---
+
+    match /countries/{code} {
+      allow read: if true;
+      allow create, update: if isSuper()
+        && request.resource.data.code == code
+        && isStr(request.resource.data.name, 200)
+        && isStr(request.resource.data.currency, 3)
+        && request.resource.data.paymentMethodIds is list
+        && request.resource.data.timezones is list
+        && request.resource.data.enabled is bool;
+      allow delete: if false;
+    }
+
+    match /sports/{sportId} {
+      allow read: if true;
+      allow create, update: if isSuper()
+        && isStr(request.resource.data.name, 200)
+        && request.resource.data.defaultBookingModel in ['exclusive', 'session', 'shared']
+        && request.resource.data.enabled is bool;
+      allow delete: if false;
+    }
+
+    match /identificationTypes/{typeId} {
+      allow read: if signedIn();
+      allow create, update: if isSuper()
+        && isStr(request.resource.data.name, 200)
+        && isStr(request.resource.data.countryCode, 2)
+        && request.resource.data.enabled is bool
+        && request.resource.data.highlySensitive is bool;
+      allow delete: if false;
+    }
+
+    match /paymentMethods/{methodId} {
+      allow read: if true;
+      allow create, update: if isSuper()
+        && isStr(request.resource.data.name, 200)
+        && request.resource.data.kind in ['online', 'offline']
+        && request.resource.data.enabled is bool;
+      allow delete: if false;
+    }
+
+    match /platformSettings/{docId} {
+      allow read: if true;
+      allow write: if isSuper();
+    }
+
+    match /platformStats/{docId} {
+      allow read: if isSuper();
+      allow write: if false;
+    }
+
+    match /platformNotifications/{id} {
+      allow read: if isSuper();
+      allow update: if isSuper() && changedOnly(['read']);
+      allow create, delete: if false;
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isSuper()
+        || (resource.data.companyId is string && hasRole(resource.data.companyId, adminRoles()));
+      allow write: if false;
+    }
+
+    match /rateLimits/{id} {
+      allow read, write: if false;
+    }
+
+    // ------------------------------------------------- universal accounts ---
+
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isSuper();
+      // Profiles are created by the ensureProfile function. Users can edit their own basic details only.
+      allow update: if isSelf(uid)
+        && changedOnly(['displayName', 'phone', 'countryCode', 'city', 'photoURL', 'updatedAt'])
+        && isStr(request.resource.data.displayName, 200)
+        && optStr(request.resource.data, 'city', 200);
+      allow create, delete: if false;
+
+      match /fcmTokens/{token} {
+        allow read, delete: if isSelf(uid);
+        allow create, update: if isSelf(uid)
+          && request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
+          && request.resource.data.token == token;
+      }
+
+      match /notifications/{notificationId} {
+        allow read, delete: if isSelf(uid);
+        allow update: if isSelf(uid) && changedOnly(['read']) && request.resource.data.read is bool;
+        allow create: if false;
+      }
+    }
+
+    // ------------------------------------------------------------ tenants ---
+
+    match /companies/{cid} {
+      // Active companies are discoverable, even without signing in (public calendars, discovery).
+      allow read: if resource.data.status == 'active' || isStaff(cid) || isSuper();
+
+      // Super Admins edit anything except counters. Lifecycle and restrictions go through
+      // functions so they are audited, but direct edits of descriptive fields are allowed.
+      allow update: if (isSuper() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['stats', 'status', 'allowedSportIds', 'restrictions']))
+        || (hasRole(cid, adminRoles())
+            && companyWritable(cid)
+            && changedOnly(['name', 'description', 'city', 'timezone', 'contact', 'address', 'location',
+                            'socialLinks', 'operatingHoursNote', 'logoUrl', 'photoUrls', 'updatedAt'])
+            && isStr(request.resource.data.name, 200)
+            && optStr(request.resource.data, 'description', 4000)
+            && (!('photoUrls' in request.resource.data) || request.resource.data.photoUrls.size() <= 20));
+      allow create, delete: if false;
+
+      match /private/{docId} {
+        allow read: if hasRole(cid, adminRoles()) || isSuper();
+        allow write: if (hasRole(cid, adminRoles()) && companyWritable(cid)) || isSuper();
+      }
+
+      match /settings/{docId} {
+        // Customers read booking, credit and verification rules to see what applies to them.
+        allow read: if (signedIn() && companyPublic(cid)) || isStaff(cid) || isSuper();
+        allow write: if ((hasRole(cid, adminRoles()) && companyWritable(cid)) || isSuper())
+          && docId == 'general'
+          && request.resource.data.keys().hasOnly(['booking', 'credits', 'notifications', 'verification', 'paymentMethodIds', 'updatedAt'])
+          && request.resource.data.booking.slotHoldMinutes is int
+          && request.resource.data.booking.slotHoldMinutes >= 5
+          && request.resource.data.booking.maxAdvanceDays is int
+          && request.resource.data.booking.maxAdvanceDays >= 1
+          && request.resource.data.booking.maxAdvanceDays <= 365
+          && request.resource.data.booking.requireApproval is bool
+          && request.resource.data.credits.creditValue is number
+          && request.resource.data.credits.creditValue >= 0
+          && request.resource.data.paymentMethodIds is list;
+      }
+
+      match /staff/{uid} {
+        allow read: if isStaff(cid) || isSuper() || isSelf(uid);
+        allow write: if false;
+      }
+
+      match /branches/{branchId} {
+        allow read: if companyPublic(cid) || isStaff(cid) || isSuper();
+        allow write: if false; // upsertBranch function enforces Super Admin limits.
+      }
+
+      match /courts/{courtId} {
+        // Anonymous visitors use the getPublicCourt function, which honours the court's
+        // public-calendar and show-pricing settings.
+        allow read: if (signedIn() && companyPublic(cid)) || isStaff(cid) || isSuper();
+        allow write: if false; // upsertCourt function enforces allowed sports and limits.
+
+        match /slotLocks/{lockId} {
+          allow read: if isStaff(cid) || isSuper();
+          allow write: if false;
+        }
+      }
+
+      match /blockedSlots/{blockId} {
+        allow read: if isStaff(cid) || isSuper();
+        allow create, update: if hasRole(cid, managerRoles())
+          && companyWritable(cid)
+          && request.resource.data.keys().hasOnly(['courtId', 'branchId', 'reason', 'kind', 'startDate', 'endDate',
+                                                  'startMin', 'endMin', 'days', 'createdBy', 'createdAt'])
+          && request.resource.data.kind in ['oneOff', 'weekly', 'holiday']
+          && isStr(request.resource.data.reason, 200)
+          && request.resource.data.reason.size() > 0
+          && isStr(request.resource.data.startDate, 10)
+          && request.resource.data.startDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && (request.resource.data.endDate == '' || request.resource.data.endDate >= request.resource.data.startDate)
+          && ((request.resource.data.startMin == null && request.resource.data.endMin == null)
+              || (isMinute(request.resource.data.startMin) && isMinute(request.resource.data.endMin)
+                  && request.resource.data.endMin > request.resource.data.startMin))
+          && request.resource.data.days is list
+          && exists(/databases/$(database)/documents/companies/$(cid)/branches/$(request.resource.data.branchId))
+          && (request.resource.data.courtId == null
+              || exists(/databases/$(database)/documents/companies/$(cid)/courts/$(request.resource.data.courtId)));
+        allow delete: if hasRole(cid, managerRoles()) && companyWritable(cid);
+      }
+
+      match /services/{serviceId} {
+        allow read: if (signedIn() && companyPublic(cid)) || isStaff(cid) || isSuper();
+        allow create: if hasRole(cid, managerRoles())
+          && companyWritable(cid)
+          && isStr(request.resource.data.name, 200)
+          && request.resource.data.price is number && request.resource.data.price >= 0
+          && request.resource.data.durationMonths is int && request.resource.data.durationMonths >= 1
+          && request.resource.data.active is bool
+          && request.resource.data.enrolled == 0;
+        allow update: if hasRole(cid, managerRoles())
+          && companyWritable(cid)
+          && request.resource.data.enrolled == resource.data.enrolled
+          && isStr(request.resource.data.name, 200)
+          && request.resource.data.price is number && request.resource.data.price >= 0
+          && request.resource.data.active is bool;
+        allow delete: if false; // deactivate instead, so subscriptions keep their reference.
+      }
+
+      // The per-company relationship of a universal customer account.
+      match /customers/{uid} {
+        allow read: if isStaff(cid) || isSuper() || isSelf(uid);
+        allow write: if false;
+      }
+
+      match /invitations/{inviteId} {
+        allow read: if isStaff(cid) || isSuper();
+        allow write: if false;
+      }
+
+      match /bookings/{bookingId} {
+        allow read: if isStaff(cid) || isSuper() || (signedIn() && resource.data.customerUid == request.auth.uid);
+        allow write: if false;
+      }
+
+      match /payments/{paymentId} {
+        allow read: if isStaff(cid) || isSuper() || (signedIn() && resource.data.customerUid == request.auth.uid);
+        allow write: if false;
+      }
+
+      match /creditTransactions/{txnId} {
+        allow read: if isStaff(cid) || isSuper() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow write: if false;
+      }
+
+      match /creditLots/{lotId} {
+        allow read: if isStaff(cid) || isSuper() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow write: if false;
+      }
+
+      match /verifications/{uid} {
+        allow read: if hasRole(cid, managerRoles()) || isSelf(uid);
+        allow write: if false;
+
+        // Encrypted identifiers. Only functions can read them; staff use revealIdNumber, which is audited.
+        match /secure/{docId} {
+          allow read, write: if false;
+        }
+      }
+
+      match /subscriptions/{subscriptionId} {
+        allow read: if isStaff(cid) || isSuper() || (signedIn() && resource.data.customerUid == request.auth.uid);
+        allow write: if false;
+      }
+
+      match /notifications/{notificationId} {
+        allow read: if isStaff(cid);
+        allow update: if isStaff(cid) && changedOnly(['read']) && request.resource.data.read is bool;
+        allow create, delete: if false;
+      }
+
+      match /stats/{statId} {
+        allow read: if hasRole(cid, managerRoles()) || isSuper();
+        allow write: if false;
+      }
+    }
+
+    // ---------------------------------------------- collection group reads ---
+    // Let a customer list their own records across every company they use.
+
+    match /{path=**}/customers/{uid} {
+      allow read: if isSelf(uid);
+    }
+
+    match /{path=**}/staff/{uid} {
+      allow read: if isSelf(uid);
+    }
+
+    match /{path=**}/bookings/{bookingId} {
+      allow read: if signedIn() && resource.data.customerUid == request.auth.uid;
+    }
+
+    match /{path=**}/subscriptions/{subscriptionId} {
+      allow read: if signedIn() && resource.data.customerUid == request.auth.uid;
+    }
+
+    match /{path=**}/payments/{paymentId} {
+      allow read: if signedIn() && resource.data.customerUid == request.auth.uid;
+    }
+
+    match /{path=**}/creditTransactions/{txnId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}
