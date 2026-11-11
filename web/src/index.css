@@ -13,3 +13,9 @@
     @apply cursor-pointer;
   }
 }
+
+/* The role ribbon (components/RoleRibbon) is fixed at the top; push the app's own fixed and sticky chrome below it. */
+html.has-ribbon { --ribbon: 1.75rem; }
+html.has-ribbon body { padding-top: var(--ribbon); }
+html.has-ribbon .sticky.top-0 { top: var(--ribbon); }
+html.has-ribbon aside.fixed { top: var(--ribbon); }

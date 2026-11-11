@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useSession } from './lib/auth';
 import { FullPageSpinner, Spinner } from './components/ui';
 import { UpdatePrompt } from './components/UpdatePrompt';
+import { RoleRibbon } from './components/RoleRibbon';
 import { CustomerShell } from './components/layout/CustomerShell';
 
 const Login = lazy(() => import('./pages/auth/Login'));
@@ -48,6 +49,7 @@ function HomeRedirect() {
 export default function App() {
   return (
     <>
+      <RoleRibbon />
       <Suspense fallback={<FullPageSpinner />}>
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
