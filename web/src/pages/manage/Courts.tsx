@@ -1,5 +1,5 @@
-import { useNavigate } from 'react-router-dom';
-import { ExternalLink, Plus } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CalendarDays, ExternalLink, Plus } from 'lucide-react';
 import { BOOKING_MODEL_LABELS } from '@courtsync/shared';
 import { formatMoney } from '@/lib/format';
 import { Badge, Card, DataTable, LinkButton, PageHeader } from '@/components/ui';
@@ -20,15 +20,17 @@ export default function Courts() {
       <Card padded={false}>
         <DataTable
           rows={courts}
-          onRowClick={(c) => navigate(`/manage/${companyId}/courts/${c.id}`)}
+          onRowClick={(c) => navigate(`/manage/${companyId}/calendar?court=${c.id}&view=week`)}
           empty="No courts yet."
           columns={[
             { key: 'name', header: 'Court', render: (c) => <span className="font-medium">{c.name}</span> },
+            { key: 'calendar', header: 'Calendar', render: (c) => <Link className="inline-flex items-center gap-1 text-brand-700" to={`/manage/${companyId}/calendar?court=${c.id}&view=week`} onClick={(e) => e.stopPropagation()}><CalendarDays className="h-3.5 w-3.5" /> Open</Link> },
             { key: 'sport', header: 'Sport', render: (c) => sportName(c.sportId) },
             ...(branches.length > 1 ? [{ key: 'branch', header: 'Branch', render: (c: (typeof courts)[number]) => branchName(c.branchId), hideOnMobile: true }] : []),
             { key: 'model', header: 'Booking', render: (c) => BOOKING_MODEL_LABELS[c.bookingModel], hideOnMobile: true },
             { key: 'price', header: 'Price', render: (c) => (c.bookingModel === 'session' ? `${formatMoney(c.pricing.sessionPrice, company.currency)} / session` : `${formatMoney(c.pricing.basePrice, company.currency)} / h${c.bookingModel === 'shared' ? ' per person' : ''}`), hideOnMobile: true },
             { key: 'public', header: 'Public calendar', render: (c) => (c.publicCalendar?.enabled ? <a className="inline-flex items-center gap-1 text-brand-700" href={`/p/${companyId}/${c.id}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Open <ExternalLink className="h-3.5 w-3.5" /></a> : <span className="text-slate-400">Off</span>), hideOnMobile: true },
+            { key: 'edit', header: '', render: (c) => <Link className="text-brand-700" to={`/manage/${companyId}/courts/${c.id}`} onClick={(e) => e.stopPropagation()}>Edit</Link> },
             { key: 'status', header: 'Status', render: (c) => <Badge tone={c.status === 'active' ? 'green' : c.status === 'temporarilyClosed' ? 'amber' : 'slate'}>{c.status === 'temporarilyClosed' ? 'Temporarily closed' : c.status === 'active' ? 'Active' : 'Inactive'}</Badge> },
           ]}
         />
