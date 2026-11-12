@@ -6,7 +6,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { admin, cleanup, courtInput, expectCode, makeUser, resetEmulators, seedPlatform, tomorrow, type TestUser } from './helpers';
+import { admin, cleanup, courtInput, expectCode, inDays, makeUser, resetEmulators, seedPlatform, tomorrow, type TestUser } from './helpers';
 
 let superAdmin: TestUser;
 let ownerA: TestUser;
@@ -179,7 +179,9 @@ describe('credits', () => {
     await ownerA.call('adjustCredits', { companyId: companyA, uid: alice.uid, type: 'award', amount: 300, reason: 'Welcome bonus' });
     let cust = await getDoc(doc(alice.db, `companies/${companyA}/customers/${alice.uid}`));
     expect(cust.get('creditBalance')).toBe(300);
-    const req = await alice.call('createBooking', { companyId: companyA, courtId: courtA, date, startMin: 480, endMin: 540, participants: 1, credits: 200 });
+    // Booked well ahead so the cancellation below is never "late" (which would not return credits).
+    const early = inDays(3);
+    const req = await alice.call('createBooking', { companyId: companyA, courtId: courtA, date: early, startMin: 480, endMin: 540, participants: 1, credits: 200 });
     expect(req.pricing.total).toBe(300);
     cust = await getDoc(doc(alice.db, `companies/${companyA}/customers/${alice.uid}`));
     expect(cust.get('creditBalance')).toBe(100);
@@ -268,5 +270,22 @@ describe('company lifecycle', () => {
     await superAdmin.call('setCompanyStatus', { companyId: companyB, status: 'active', reason: 'Paid' });
     const res = await ownerB.call('upsertBranch', { companyId: companyB, branch: { name: 'North', timezone: 'Asia/Kolkata', active: true } });
     expect(res.branchId).toBeTruthy();
+  });
+});
+
+describe('profiles created outside ensureProfile', () => {
+  it('fills in a bare profile document instead of treating the account as deactivated', async () => {
+    const email = 'bootstrap@courtsync.test';
+    const created = await admin.auth.createUser({ email, password: 'Test-password-123', displayName: 'Boot Strap' });
+    await admin.auth.setCustomUserClaims(created.uid, { superAdmin: true });
+    // What the bootstrap script used to write: only the platform role.
+    await admin.db.doc(`users/${created.uid}`).set({ platformRole: 'superAdmin' });
+    const user = await makeUser(email); // signs in and calls ensureProfile
+    const res = await user.call('ensureProfile', {});
+    expect(res.superAdmin).toBe(true);
+    const profile = (await admin.db.doc(`users/${created.uid}`).get()).data()!;
+    expect(profile.status).toBe('active');
+    expect(profile.platformRole).toBe('superAdmin');
+    expect(profile.email).toBe(email);
   });
 });

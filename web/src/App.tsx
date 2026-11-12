@@ -33,8 +33,22 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (loading) return <FullPageSpinner />;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   if (mustChangePassword && location.pathname !== '/change-password') return <Navigate to="/change-password" replace />;
-  if (error && error.includes('deactivated')) return <Navigate to="/login" replace />;
+  // Show a message here: sending the user back to /login would bounce straight back and loop.
+  if (error && error.includes('deactivated')) return <DeactivatedNotice message={error} />;
   return <>{children}</>;
+}
+
+function DeactivatedNotice({ message }: { message: string }) {
+  const { signOut } = useSession();
+  return (
+    <div className="mx-auto mt-24 max-w-md px-4 text-center" role="alert">
+      <h1 className="text-lg font-semibold text-slate-900">This account can't be used</h1>
+      <p className="mt-2 text-sm text-slate-600">{message}</p>
+      <button type="button" className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white" onClick={() => void signOut()}>
+        Sign out
+      </button>
+    </div>
+  );
 }
 
 /** Sends people to the area that fits them after sign-in. */

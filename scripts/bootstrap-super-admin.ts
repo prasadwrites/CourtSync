@@ -34,7 +34,27 @@ initializeApp({ projectId: project });
   const user = await auth.getUserByEmail(email).catch(() => null);
   if (!user) throw new Error(`No account uses ${email}. Sign up in the app first, then run this again.`);
   await auth.setCustomUserClaims(user.uid, { ...(user.customClaims ?? {}), superAdmin: !revoke });
-  await getFirestore().collection('users').doc(user.uid).set({ platformRole: revoke ? null : 'superAdmin', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+  const userRef = getFirestore().collection('users').doc(user.uid);
+  const existing = await userRef.get();
+  await userRef.set(
+    {
+      platformRole: revoke ? null : 'superAdmin',
+      updatedAt: FieldValue.serverTimestamp(),
+      // Give a brand-new profile the basic fields the app expects (an existing profile keeps its own values).
+      ...(existing.exists && existing.get('status')
+        ? {}
+        : {
+            displayName: existing.get('displayName') || user.displayName || email.split('@')[0],
+            email,
+            phone: user.phoneNumber ?? null,
+            photoURL: user.photoURL ?? null,
+            status: 'active',
+            mustChangePassword: false,
+            createdAt: existing.get('createdAt') ?? FieldValue.serverTimestamp(),
+          }),
+    },
+    { merge: true },
+  );
   await getFirestore().collection('auditLogs').add({
     actorUid: null, actorEmail: 'bootstrap-script', action: revoke ? 'user.superAdminRevoked' : 'user.superAdminGranted',
     targetType: 'user', targetId: user.uid, companyId: null, metadata: { email, via: 'bootstrap-super-admin' }, at: FieldValue.serverTimestamp(),
