@@ -25,7 +25,13 @@ export default function Calendar() {
   const date = params.get('date') || todayISO(company.timezone);
   const [branchId, setBranchId] = useState(params.get('branch') || '');
   const activeCourts = courts.filter((c) => c.status !== 'inactive' && (!branchId || c.branchId === branchId));
-  const courtId = params.get('court') || activeCourts[0]?.id || '';
+  const courtParam = params.get('court') || '';
+  const courtId = courtParam || activeCourts[0]?.id || '';
+  // In day view a chosen court shows only that court; with none chosen every court is a column.
+  const dayCourts = courtParam ? activeCourts.filter((c) => c.id === courtParam) : activeCourts;
+  const canBook = can('bookings.create');
+  const canBlock = can('calendar.block');
+  const [mode, setMode] = useState<'book' | 'block'>(canBook ? 'book' : 'block');
   const [showCancelled, setShowCancelled] = useState(false);
   const [newBooking, setNewBooking] = useState<{ courtId?: string; date: string; startMin?: number } | null>(params.get('new') ? { date } : null);
   const [blockOpen, setBlockOpen] = useState<Partial<BlockedSlot> | null>(null);
@@ -40,12 +46,12 @@ export default function Calendar() {
 
   const range = view === 'day' ? { start: date, end: date } : view === 'week' ? weekRange(date) : monthRange(date);
   const bookingsQ =
-    view === 'day'
+    view === 'day' && !courtParam
       ? query(collection(db, 'companies', companyId, 'bookings'), where('date', '==', date), orderBy('startMin'), limit(1000))
       : courtId
         ? query(collection(db, 'companies', companyId, 'bookings'), where('courtId', '==', courtId), where('date', '>=', range.start), where('date', '<=', range.end), limit(2000))
         : null;
-  const bookings = useQuery<Booking>(bookingsQ, `cal-${companyId}-${view}-${date}-${view === 'day' ? '' : courtId}`);
+  const bookings = useQuery<Booking>(bookingsQ, `cal-${companyId}-${view}-${date}-${view === 'day' && !courtParam ? '' : courtId}`);
   const visible = bookings.data.filter((b) => showCancelled || !HIDDEN.has(b.status));
 
   const step = (dir: 1 | -1) => {
@@ -61,8 +67,11 @@ export default function Calendar() {
         : DateTime.fromISO(date).toFormat('LLLL yyyy');
 
   const onCellClick = (court: WithId<Court>, d: string, minute: number) => {
-    if (!can('bookings.create')) return;
+    if (!canBook || mode !== 'book') return;
     setNewBooking({ courtId: court.id, date: d, startMin: minute });
+  };
+  const onSelectRange = (court: WithId<Court>, d: string, startMin: number, endMin: number) => {
+    setBlockOpen({ courtId: court.id, branchId: court.branchId, startDate: d, endDate: d, startMin, endMin, kind: 'oneOff' });
   };
 
   return (
@@ -71,8 +80,8 @@ export default function Calendar() {
         title="Calendar"
         actions={
           <div className="flex flex-wrap gap-2">
-            {can('calendar.block') && <Button variant="secondary" icon={<CalendarOff className="h-4 w-4" />} onClick={() => setBlockOpen({ startDate: date, courtId: view === 'day' ? null : courtId, branchId: branchId || courts.find((c) => c.id === courtId)?.branchId || branches[0]?.id })}>Block time</Button>}
-            {can('bookings.create') && <Button icon={<Plus className="h-4 w-4" />} onClick={() => setNewBooking({ date, courtId: view === 'day' ? undefined : courtId })}>New booking</Button>}
+            {can('calendar.block') && <Button variant="secondary" icon={<CalendarOff className="h-4 w-4" />} onClick={() => setBlockOpen({ startDate: date, courtId: view === 'day' && !courtParam ? null : courtId, branchId: branchId || courts.find((c) => c.id === courtId)?.branchId || branches[0]?.id })}>Block time</Button>}
+            {can('bookings.create') && <Button icon={<Plus className="h-4 w-4" />} onClick={() => setNewBooking({ date, courtId: view === 'day' && !courtParam ? undefined : courtId })}>New booking</Button>}
           </div>
         }
       />
@@ -88,7 +97,16 @@ export default function Calendar() {
           {branches.length > 1 && (
             <Select aria-label="Branch" className="h-8 w-40" value={branchId} onChange={(e) => { setBranchId(e.target.value); set({ branch: e.target.value || null, court: null }); }} placeholder="All branches" options={branches.map((b) => ({ value: b.id, label: b.name }))} />
           )}
-          {view !== 'day' && <Select aria-label="Court" className="h-8 w-44" value={courtId} onChange={(e) => set({ court: e.target.value })} options={activeCourts.map((c) => ({ value: c.id, label: c.name }))} />}
+          <Select aria-label="Court" className="h-8 w-44" value={view === 'day' ? courtParam : courtId} onChange={(e) => set({ court: e.target.value || null })} placeholder={view === 'day' ? 'All courts' : undefined} options={activeCourts.map((c) => ({ value: c.id, label: c.name }))} />
+          {view !== 'month' && canBook && canBlock && (
+            <div className="flex overflow-hidden rounded-md border border-slate-300 text-xs" role="group" aria-label="Click action">
+              {(['book', 'block'] as const).map((m) => (
+                <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)} className={clsx('px-2.5 py-1.5 font-medium', mode === m ? 'bg-brand-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-50')}>
+                  {m === 'book' ? 'Click to book' : 'Drag to block'}
+                </button>
+              ))}
+            </div>
+          )}
           <label className="flex items-center gap-1.5 text-xs text-slate-600">
             <input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} /> Show cancelled
           </label>
@@ -108,7 +126,7 @@ export default function Calendar() {
           <TimeGrid
             columns={
               view === 'day'
-                ? activeCourts.map((c) => ({ key: c.id, label: c.name, court: c, date }))
+                ? dayCourts.map((c) => ({ key: c.id, label: c.name, court: c, date }))
                 : (() => {
                     const c = activeCourts.find((x) => x.id === courtId);
                     return c ? eachDate(range.start, range.end).map((d) => ({ key: d, label: DateTime.fromISO(d).toFormat('ccc d'), court: c, date: d })) : [];
@@ -118,6 +136,9 @@ export default function Calendar() {
             blocks={blocks.data}
             onBookingClick={(b) => navigate(`/manage/${companyId}/bookings/${b.id}`)}
             onCellClick={onCellClick}
+            selectMode={canBlock && mode === 'block'}
+            onSelectRange={onSelectRange}
+            onBlockClick={canBlock ? (b) => setBlockOpen(b) : undefined}
           />
         )}
       </Card>
@@ -134,7 +155,8 @@ interface Column {
   date: string;
 }
 
-function TimeGrid({ columns, bookings, blocks, onBookingClick, onCellClick }: { columns: Column[]; bookings: WithId<Booking>[]; blocks: WithId<BlockedSlot>[]; onBookingClick: (b: WithId<Booking>) => void; onCellClick: (c: WithId<Court>, date: string, minute: number) => void }) {
+function TimeGrid({ columns, bookings, blocks, onBookingClick, onCellClick, selectMode, onSelectRange, onBlockClick }: { columns: Column[]; bookings: WithId<Booking>[]; blocks: WithId<BlockedSlot>[]; onBookingClick: (b: WithId<Booking>) => void; onCellClick: (c: WithId<Court>, date: string, minute: number) => void; selectMode: boolean; onSelectRange: (c: WithId<Court>, date: string, startMin: number, endMin: number) => void; onBlockClick?: (b: WithId<BlockedSlot>) => void }) {
+  const [drag, setDrag] = useState<{ key: string; a: number; b: number } | null>(null);
   const { from, to } = useMemo(() => {
     let lo = 24 * 60;
     let hi = 0;
@@ -177,13 +199,33 @@ function TimeGrid({ columns, bookings, blocks, onBookingClick, onCellClick }: { 
             <div key={col.key} className="w-40 shrink-0 border-l border-slate-200 sm:w-48">
               <div className="flex h-10 items-center justify-center truncate border-b border-slate-200 px-2 text-xs font-semibold">{col.label}</div>
               <div
-                className="relative cursor-pointer"
+                className={clsx('relative', selectMode ? 'cursor-crosshair select-none touch-none' : 'cursor-pointer')}
                 style={{ height }}
                 onClick={(e) => {
+                  if (selectMode) return;
                   const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
                   const minute = from + Math.floor(y / PX_PER_MIN / step) * step;
                   onCellClick(col.court, col.date, minute);
                 }}
+                onPointerDown={(e) => {
+                  if (!selectMode || e.button !== 0) return;
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  const m = minuteAt(e, from, step);
+                  setDrag({ key: col.key, a: m, b: m });
+                }}
+                onPointerMove={(e) => {
+                  if (drag?.key !== col.key) return;
+                  const m = minuteAt(e, from, step);
+                  setDrag({ ...drag, b: m });
+                }}
+                onPointerUp={() => {
+                  if (drag?.key !== col.key) return;
+                  const start = Math.max(from, Math.min(drag.a, drag.b));
+                  const end = Math.min(to, Math.max(drag.a, drag.b) + step);
+                  setDrag(null);
+                  onSelectRange(col.court, col.date, start, end);
+                }}
+                onPointerCancel={() => setDrag(null)}
               >
                 {hours.map((h) => <div key={h} className="absolute inset-x-0 border-t border-slate-100" style={{ top: (h - from) * PX_PER_MIN }} />)}
                 {closed.map((r, i) => <div key={i} className="absolute inset-x-0 bg-slate-100/80" style={{ top: (r.start - from) * PX_PER_MIN, height: (r.end - r.start) * PX_PER_MIN }} />)}
@@ -192,11 +234,28 @@ function TimeGrid({ columns, bookings, blocks, onBookingClick, onCellClick }: { 
                   const e = Math.min(r!.end, to);
                   if (e <= s) return null;
                   return (
-                    <div key={b.id} className="absolute inset-x-0 overflow-hidden bg-[repeating-linear-gradient(45deg,#f1f5f9,#f1f5f9_6px,#e2e8f0_6px,#e2e8f0_12px)] p-1 text-[11px] text-slate-600" style={{ top: (s - from) * PX_PER_MIN, height: (e - s) * PX_PER_MIN }} title={b.reason}>
+                    <div
+                      key={b.id}
+                      role={onBlockClick ? 'button' : undefined}
+                      className={clsx('absolute inset-x-0 overflow-hidden bg-[repeating-linear-gradient(45deg,#f1f5f9,#f1f5f9_6px,#e2e8f0_6px,#e2e8f0_12px)] p-1 text-[11px] text-slate-600', onBlockClick && 'cursor-pointer hover:ring-1 hover:ring-slate-400')}
+                      style={{ top: (s - from) * PX_PER_MIN, height: (e - s) * PX_PER_MIN }}
+                      title={onBlockClick ? `${b.reason} (click to edit)` : b.reason}
+                      onPointerDown={(ev) => onBlockClick && ev.stopPropagation()}
+                      onClick={(ev) => {
+                        if (!onBlockClick) return;
+                        ev.stopPropagation();
+                        onBlockClick(b);
+                      }}
+                    >
                       {b.reason}
                     </div>
                   );
                 })}
+                {drag?.key === col.key && (
+                  <div className="pointer-events-none absolute inset-x-0 z-10 rounded border border-brand-600 bg-brand-500/25 p-1 text-[11px] font-medium text-brand-800" style={{ top: (Math.min(drag.a, drag.b) - from) * PX_PER_MIN, height: (Math.abs(drag.b - drag.a) + step) * PX_PER_MIN }}>
+                    {formatMinutes(Math.min(drag.a, drag.b))}–{formatMinutes(Math.max(drag.a, drag.b) + step)}
+                  </div>
+                )}
                 {colBookings.map((b) => {
                   const lane = lanes.get(b.id)!;
                   return (
@@ -222,6 +281,11 @@ function TimeGrid({ columns, bookings, blocks, onBookingClick, onCellClick }: { 
       </div>
     </div>
   );
+}
+
+function minuteAt(e: React.PointerEvent<HTMLElement>, from: number, step: number) {
+  const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
+  return from + Math.max(0, Math.floor(y / PX_PER_MIN / step)) * step;
 }
 
 function invert(open: { start: number; end: number }[], from: number, to: number) {
