@@ -43,7 +43,7 @@ export const upsertBranch = callable(
 
 export const upsertCourt = callable(
   'upsertCourt',
-  z.object({ companyId: z.string().regex(idRe), courtId: z.string().regex(idRe).optional(), court: courtSchema }),
+  z.object({ companyId: z.string().regex(idRe), courtId: z.string().regex(idRe).nullish(), court: courtSchema }),
   async ({ companyId, courtId, court }, caller) => {
     const ctx = await requireStaff(caller, companyId, 'courts.manage');
     assertBranchAccess(ctx, court.branchId);

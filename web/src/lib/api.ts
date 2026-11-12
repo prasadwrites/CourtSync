@@ -21,7 +21,10 @@ const FALLBACK: Record<string, string> = {
 
 export async function call<T = unknown>(name: string, data: unknown = {}): Promise<T> {
   try {
-    const res = await httpsCallable(functions, name)(data);
+    // The callable SDK encodes `undefined` as null, which fails `.optional()` fields on the server.
+    // Dropping undefined keys makes them truly absent.
+    const payload = data && typeof data === 'object' && !Array.isArray(data) ? JSON.parse(JSON.stringify(data)) : data;
+    const res = await httpsCallable(functions, name)(payload);
     return res.data as T;
   } catch (e) {
     const err = e as FunctionsError;
