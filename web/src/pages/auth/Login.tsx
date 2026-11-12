@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { errorMessage } from '@/lib/api';
+import { useSession } from '@/lib/auth';
 import { Button, Input, Alert, Tabs } from '@/components/ui';
 import { AuthLayout } from './AuthLayout';
 import { GoogleButton, PhoneSignIn } from './SocialAndPhone';
@@ -17,6 +18,10 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const done = () => navigate(next, { replace: true });
+  const { user, loading } = useSession();
+
+  // Already signed in (or the sign-in call never reported back, as with some popup setups): move on.
+  if (!loading && user) return <Navigate to={next} replace />;
 
   return (
     <AuthLayout
