@@ -9,7 +9,7 @@ import { useSession } from '@/lib/auth';
  * Plain customers don't see it.
  */
 export function RoleRibbon() {
-  const { user, loading, superAdmin, staffOf, profile, signOut } = useSession();
+  const { user, loading, superAdmin, staffOf, profile, signOut, error } = useSession();
   // The profile says Super Admin but this sign-in token doesn't carry it yet.
   const stale = !superAdmin && profile?.platformRole === 'superAdmin';
   const { pathname } = useLocation();
@@ -29,8 +29,10 @@ export function RoleRibbon() {
   if (stale) {
     return (
       <div role="status" className="fixed inset-x-0 top-0 z-50 flex h-7 items-center justify-between gap-4 overflow-hidden bg-amber-500 px-4 text-xs font-medium text-slate-900">
-        <span>Super Admin was granted to {who}, but this session hasn't picked it up yet.</span>
-        <button type="button" className="underline underline-offset-2" onClick={() => void signOut()}>
+        <span className="truncate">
+          {error ? `Super Admin is saved for ${who}, but loading your roles failed: ${error}` : `Super Admin is saved for ${who}, but this sign-in token doesn't include it.`}
+        </span>
+        <button type="button" className="shrink-0 underline underline-offset-2" onClick={() => void signOut()}>
           Sign out, then sign in again
         </button>
       </div>
