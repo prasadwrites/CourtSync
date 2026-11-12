@@ -4,6 +4,7 @@ import { useSession } from './lib/auth';
 import { FullPageSpinner, Spinner } from './components/ui';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { RoleRibbon } from './components/RoleRibbon';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { CustomerShell } from './components/layout/CustomerShell';
 
 const Login = lazy(() => import('./pages/auth/Login'));
@@ -50,32 +51,34 @@ export default function App() {
   return (
     <>
       <RoleRibbon />
-      <Suspense fallback={<FullPageSpinner />}>
-        <Routes>
-          <Route path="/" element={<HomeRedirect />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/change-password" element={<RequireAuth><ChangePassword /></RequireAuth>} />
-          <Route path="/p/:companyId/:courtId" element={<PublicCalendar />} />
-          <Route path="/admin/*" element={<RequireAuth><SuperAdminRoutes /></RequireAuth>} />
-          <Route path="/manage/:companyId/*" element={<RequireAuth><CompanyAdminRoutes /></RequireAuth>} />
-          <Route element={<RequireAuth><CustomerShell /></RequireAuth>}>
-            <Route path="/home" element={<Page><CustomerHome /></Page>} />
-            <Route path="/explore" element={<Page><Explore /></Page>} />
-            <Route path="/c/:companyId" element={<Page><CompanyPage /></Page>} />
-            <Route path="/c/:companyId/court/:courtId" element={<Page><CourtBooking /></Page>} />
-            <Route path="/c/:companyId/verify" element={<Page><Verify /></Page>} />
-            <Route path="/bookings" element={<Page><MyBookings /></Page>} />
-            <Route path="/bookings/:companyId/:bookingId" element={<Page><BookingDetail /></Page>} />
-            <Route path="/memberships" element={<Page><Memberships /></Page>} />
-            <Route path="/credits" element={<Page><Credits /></Page>} />
-            <Route path="/profile" element={<Page><Profile /></Page>} />
-            <Route path="/notifications" element={<Page><Notifications /></Page>} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<FullPageSpinner />}>
+          <Routes>
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/change-password" element={<RequireAuth><ChangePassword /></RequireAuth>} />
+            <Route path="/p/:companyId/:courtId" element={<PublicCalendar />} />
+            <Route path="/admin/*" element={<RequireAuth><SuperAdminRoutes /></RequireAuth>} />
+            <Route path="/manage/:companyId/*" element={<RequireAuth><CompanyAdminRoutes /></RequireAuth>} />
+            <Route element={<RequireAuth><CustomerShell /></RequireAuth>}>
+              <Route path="/home" element={<Page><CustomerHome /></Page>} />
+              <Route path="/explore" element={<Page><Explore /></Page>} />
+              <Route path="/c/:companyId" element={<Page><CompanyPage /></Page>} />
+              <Route path="/c/:companyId/court/:courtId" element={<Page><CourtBooking /></Page>} />
+              <Route path="/c/:companyId/verify" element={<Page><Verify /></Page>} />
+              <Route path="/bookings" element={<Page><MyBookings /></Page>} />
+              <Route path="/bookings/:companyId/:bookingId" element={<Page><BookingDetail /></Page>} />
+              <Route path="/memberships" element={<Page><Memberships /></Page>} />
+              <Route path="/credits" element={<Page><Credits /></Page>} />
+              <Route path="/profile" element={<Page><Profile /></Page>} />
+              <Route path="/notifications" element={<Page><Notifications /></Page>} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
       <UpdatePrompt />
     </>
   );
