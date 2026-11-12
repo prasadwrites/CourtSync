@@ -14,11 +14,13 @@ const FEATURES = [
 export default function Landing() {
   return (
     <div className="min-h-screen bg-white">
-      <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Logo />
-        <div className="flex gap-2">
-          <LinkButton variant="ghost" to="/login">Sign in</LinkButton>
-          <LinkButton to="/register">Create account</LinkButton>
+      <header className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4">
+        <div className="min-w-0 shrink-0">
+          <Logo />
+        </div>
+        <div className="flex shrink-0 items-center gap-1 whitespace-nowrap sm:gap-2">
+          <LinkButton variant="ghost" size="sm" to="/login">Sign in</LinkButton>
+          <LinkButton size="sm" to="/register"><span className="sm:hidden">Sign up</span><span className="hidden sm:inline">Create account</span></LinkButton>
         </div>
       </header>
       <section className="mx-auto max-w-6xl px-4 pb-16 pt-10 sm:pt-20">
