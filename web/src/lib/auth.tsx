@@ -43,8 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       // Always fetch a fresh token so a newly granted Super Admin claim shows up at sign-in.
       const token = await u.getIdTokenResult(true);
+      const superAdmin = token.claims.superAdmin === true;
+      // Apply the claim first, so a failing ensureProfile call can't hide it.
+      setInfo((prev) => ({ ...prev, superAdmin }));
       const res = await call<EnsureResult>('ensureProfile', {});
-      setInfo({ ...res, superAdmin: token.claims.superAdmin === true });
+      setInfo({ ...res, superAdmin });
       setError(null);
     } catch (e) {
       setError((e as Error).message);
