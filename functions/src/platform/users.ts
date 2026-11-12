@@ -22,7 +22,24 @@ export const ensureProfile = callable(
     const ref = refs.user(caller.uid);
     const created = await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
-      if (snap.exists) return false;
+      if (snap.exists) {
+        // A document made outside this function (e.g. by the Super Admin bootstrap script) can lack
+        // the basic profile fields. Fill them in rather than treating the account as deactivated.
+        const existing = snap.data() as Partial<UserProfile>;
+        if (!existing.status) {
+          tx.update(ref, {
+            displayName: existing.displayName || record.displayName || record.email?.split('@')[0] || record.phoneNumber || 'CourtSync user',
+            email: existing.email ?? record.email ?? null,
+            phone: existing.phone ?? record.phoneNumber ?? null,
+            photoURL: existing.photoURL ?? record.photoURL ?? null,
+            status: 'active',
+            mustChangePassword: existing.mustChangePassword ?? false,
+            createdAt: existing.createdAt ?? FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+        return false;
+      }
       const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> & Record<string, unknown> = {
         displayName: input.displayName || record.displayName || record.email?.split('@')[0] || record.phoneNumber || 'CourtSync user',
         email: record.email ?? null,

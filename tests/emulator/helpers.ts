@@ -92,6 +92,8 @@ export async function seedPlatform() {
 }
 
 export const tomorrow = (tz = 'Asia/Kolkata') => DateTime.now().setZone(tz).plus({ days: 1 }).toISODate()!;
+/** A date far enough ahead that a cancellation is never inside the late-cancellation window, whatever the time of day. */
+export const inDays = (days: number, tz = 'Asia/Kolkata') => DateTime.now().setZone(tz).plus({ days }).toISODate()!;
 
 export function courtInput(branchId: string, sportId = 'badminton', overrides: Record<string, unknown> = {}) {
   const day = { sessions: [{ start: 0, end: 1440 }] };
