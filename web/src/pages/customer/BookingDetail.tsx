@@ -88,7 +88,6 @@ export default function BookingDetail() {
           <CardHeader title={company.data?.name ?? 'Details'} action={<PaymentStatusBadge status={b.paymentStatus} />} />
           <ul className="space-y-1 text-sm">
             {b.pricing.lines.map((l, i) => <li key={i} className="flex justify-between"><span className="text-slate-600">{l.label}</span><span>{formatMoney(l.amount, b.pricing.currency)}</span></li>)}
-            {b.pricing.creditsApplied > 0 && <li className="flex justify-between"><span className="text-slate-600">{b.pricing.creditsApplied} credits</span><span>−{formatMoney(b.pricing.creditsApplied * b.pricing.creditValue, b.pricing.currency)}</span></li>}
             <li className="flex justify-between border-t border-slate-100 pt-1 font-semibold"><span>Total</span><span>{formatMoney(b.pricing.total, b.pricing.currency)}</span></li>
             <li className="flex justify-between text-slate-600"><span>Paid</span><span>{formatMoney(b.amountPaid, b.pricing.currency)}</span></li>
             {b.amountRefunded > 0 && <li className="flex justify-between text-slate-600"><span>Refunded</span><span>{formatMoney(b.amountRefunded, b.pricing.currency)}</span></li>}

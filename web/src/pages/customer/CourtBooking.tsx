@@ -100,8 +100,8 @@ export default function CourtBooking() {
     <div className="space-y-4">
       <PageHeader back={`/c/${companyId}`} title={court.name} description={`${court.sportName} · ${company.name}`} />
       {court.status === 'temporarilyClosed' && <Alert tone="warning">This court is temporarily closed.</Alert>}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           <Card>
             <DateStrip dates={avail.data.days.map((d) => d.date)} value={date} onChange={(d) => { setDate(d); setSlot(null); }} freeCount={freeCount} />
           </Card>
