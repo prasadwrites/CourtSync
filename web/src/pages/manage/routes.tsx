@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes, useParams } from 'react-router-dom';
 import {
-  BarChart3, Bell, Building, CalendarDays, CalendarOff, ClipboardList, Coins, CreditCard, IdCard, LayoutDashboard, LayoutGrid, Medal, ScanLine, ScrollText, Settings, UserCog, Users,
+  BarChart3, Bell, Building, CalendarDays, CalendarOff, ClipboardList, Coins, CreditCard, IdCard, LayoutDashboard, LayoutGrid, Medal, ScanLine, ScrollText, Settings, Sparkles, UserCog, Users,
 } from 'lucide-react';
 import { useSession } from '@/lib/auth';
 import { AdminShell, type NavItem } from '@/components/layout/AdminShell';
@@ -29,6 +29,7 @@ const Staff = lazy(() => import('./Staff'));
 const SettingsPage = lazy(() => import('./Settings'));
 const Activity = lazy(() => import('./Activity'));
 const CompanyNotifications = lazy(() => import('./Notifications'));
+const Subscriptions = lazy(() => import('./Subscriptions'));
 
 export default function CompanyAdminRoutes() {
   const { companyId = '' } = useParams();
@@ -40,6 +41,8 @@ export default function CompanyAdminRoutes() {
   if (loading || !value) return <FullPageSpinner />;
   const { can, company } = value;
   const base = `/manage/${companyId}`;
+  // The platform plan is bought by the company's admins (owner, admin) or a super admin, not by other staff.
+  const isCompanyAdmin = value.role === 'owner' || value.role === 'admin' || value.role === 'super';
   const nav: NavItem[] = [
     { to: base, label: 'Overview', icon: <LayoutDashboard />, end: true },
     { to: `${base}/calendar`, label: 'Calendar', icon: <CalendarDays />, hidden: !can('bookings.view') },
@@ -57,6 +60,7 @@ export default function CompanyAdminRoutes() {
     { to: `${base}/staff`, label: 'Staff', icon: <UserCog />, hidden: !can('staff.manage') },
     { to: `${base}/activity`, label: 'Activity log', icon: <ScrollText />, hidden: !can('audit.view') },
     { to: `${base}/notifications`, label: 'Notifications', icon: <Bell /> },
+    { to: `${base}/subscriptions`, label: 'Subscriptions', icon: <Sparkles />, hidden: !isCompanyAdmin },
     { to: `${base}/settings`, label: 'Settings', icon: <Settings />, hidden: !can('company.settings.edit') && !can('company.profile.edit') },
   ];
   const banner =
@@ -93,6 +97,7 @@ export default function CompanyAdminRoutes() {
           <Route path="staff" element={guard(can('staff.manage'), <Staff />)} />
           <Route path="activity" element={guard(can('audit.view'), <Activity />)} />
           <Route path="notifications" element={<S><CompanyNotifications /></S>} />
+          <Route path="subscriptions" element={guard(isCompanyAdmin, <Subscriptions />)} />
           <Route path="settings" element={guard(can('company.settings.edit') || can('company.profile.edit'), <SettingsPage />)} />
           <Route path="*" element={<Navigate to={base} replace />} />
         </Route>
