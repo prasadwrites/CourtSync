@@ -232,6 +232,8 @@ function Restrictions({ c }: { c: Company & { id: string } }) {
   const [bookingsDisabled, setBookingsDisabled] = useState(!!c.restrictions?.bookingsDisabled);
   const [plan, setPlan] = useState(c.subscription?.plan ?? 'standard');
   const [subStatus, setSubStatus] = useState(c.subscription?.status ?? 'trial');
+  const [racketLic, setRacketLic] = useState(String(c.subscription?.licences?.racket ?? 0));
+  const [teamLic, setTeamLic] = useState(String(c.subscription?.licences?.team ?? 0));
   const [busy, setBusy] = useState(false);
   const removed = c.allowedSportIds.filter((s) => !allowed.includes(s) && c.sportIds.includes(s));
   return (
@@ -248,6 +250,8 @@ function Restrictions({ c }: { c: Company & { id: string } }) {
         <Input label="Maximum branches" type="number" min={0} value={maxBranches} onChange={(e) => setMaxBranches(e.target.value)} hint="Leave empty for no limit." />
         <Input label="Plan" value={plan} onChange={(e) => setPlan(e.target.value)} />
         <Select label="Subscription status" value={subStatus} onChange={(e) => setSubStatus(e.target.value as typeof subStatus)} options={['trial', 'active', 'pastDue', 'cancelled'].map((s) => ({ value: s, label: s }))} />
+        <Input label="Racket court licences" type="number" min={0} value={racketLic} onChange={(e) => setRacketLic(e.target.value)} hint="Paid licences, one per court." />
+        <Input label="Team sports licences" type="number" min={0} value={teamLic} onChange={(e) => setTeamLic(e.target.value)} hint="Paid licences, one per court." />
         <div className="sm:col-span-2">
           <Switch checked={bookingsDisabled} onChange={setBookingsDisabled} label="Pause new bookings" description="Customers can't book while this is on. Existing bookings stay." />
         </div>
@@ -263,7 +267,7 @@ function Restrictions({ c }: { c: Company & { id: string } }) {
                 companyId: c.id,
                 allowedSportIds: allowed,
                 restrictions: { maxCourts: num(maxCourts), maxBranches: num(maxBranches), bookingsDisabled },
-                subscription: { plan, status: subStatus },
+                subscription: { plan, status: subStatus, licences: { racket: num(racketLic) ?? 0, team: num(teamLic) ?? 0 } },
               });
               toast.success(r.closedCourts ? `Saved. ${r.closedCourts} courts were deactivated.` : 'Saved');
             } catch (e) {
