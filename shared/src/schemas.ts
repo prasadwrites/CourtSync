@@ -110,7 +110,11 @@ export const companyRestrictionsSchema = z.object({
     })
     .optional(),
   subscription: z
-    .object({ plan: shortText, status: z.enum(['trial', 'active', 'pastDue', 'cancelled']) })
+    .object({
+      plan: shortText,
+      status: z.enum(['trial', 'active', 'pastDue', 'cancelled']),
+      licences: z.object({ racket: z.number().int().min(0).max(1000), team: z.number().int().min(0).max(1000) }).optional(),
+    })
     .optional(),
 });
 

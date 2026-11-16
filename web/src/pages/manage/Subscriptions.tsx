@@ -7,14 +7,14 @@ import { useCompany } from './context';
 /** Square hosted payment links for the CourtSync platform plans. */
 export const SQUARE_PLANS = [
   {
-    id: 'racket',
+    id: 'racket' as const,
     name: 'Racket court subscription',
     description: 'CourtSync plan for facilities with racket sport courts.',
     url: 'https://square.link/u/W8CP92T2?src=embed',
     icon: <Trophy className="h-5 w-5" />,
   },
   {
-    id: 'team',
+    id: 'team' as const,
     name: 'Team sports subscription',
     description: 'CourtSync plan for facilities with team sport courts and pitches.',
     url: 'https://square.link/u/MEXMNGN0?src=embed',
@@ -56,6 +56,9 @@ export default function Subscriptions() {
   const { company } = useCompany();
   const sub = company.subscription;
   const status = sub?.status ? STATUS[sub.status as PlanStatus] : undefined;
+  const lic = { racket: sub?.licences?.racket ?? 0, team: sub?.licences?.team ?? 0 };
+  const totalLic = lic.racket + lic.team;
+  const courts = company.stats?.courts ?? 0;
   return (
     <>
       <PageHeader title="Subscriptions" description="Your CourtSync plan and how to pay for it." />
@@ -66,11 +69,21 @@ export default function Subscriptions() {
           { label: 'Plan', value: sub?.plan ? <span className="capitalize">{sub.plan}</span> : 'None' },
           { label: 'Status', value: status ? <Badge tone={status.tone}>{status.label}</Badge> : 'Not set' },
           ...(sub?.renewsAt ? [{ label: 'Renews', value: fmtTs(sub.renewsAt, false) }] : []),
+          { label: 'Racket court licences', value: lic.racket },
+          { label: 'Team sports licences', value: lic.team },
+          { label: 'Courts set up', value: courts },
         ]} />
+        {courts > totalLic && (
+          <div className="mt-4">
+            <Alert tone="warning">
+              You have {courts} {courts === 1 ? 'court' : 'courts'} and {totalLic} {totalLic === 1 ? 'licence' : 'licences'}. Each court needs its own licence, so buy {courts - totalLic} more below.
+            </Alert>
+          </div>
+        )}
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {SQUARE_PLANS.map((p) => <PlanCard key={p.id} name={p.name} description={p.description} url={p.url} icon={p.icon} />)}
+        {SQUARE_PLANS.map((p) => <PlanCard key={p.id} name={p.name} description={p.description} url={p.url} icon={p.icon} owned={lic[p.id]} />)}
       </div>
 
       <div className="mt-5">
@@ -82,12 +95,13 @@ export default function Subscriptions() {
   );
 }
 
-function PlanCard({ name, description, url, icon }: { name: string; description: string; url: string; icon: ReactNode }) {
+function PlanCard({ name, description, url, icon, owned }: { name: string; description: string; url: string; icon: ReactNode; owned: number }) {
   return (
     <Card className="flex flex-col">
       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">{icon}</div>
       <h3 className="text-base font-semibold text-slate-900">Buy {name.toLowerCase()}</h3>
-      <p className="mt-1 flex-1 text-sm text-slate-500">{description}</p>
+      <p className="mt-1 flex-1 text-sm text-slate-500">{description} One licence covers one court.</p>
+      <p className="mt-3 text-sm font-medium text-slate-700">You have {owned} {owned === 1 ? 'licence' : 'licences'}</p>
       <a
         href={url}
         target="_blank"

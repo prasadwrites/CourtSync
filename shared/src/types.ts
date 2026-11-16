@@ -162,13 +162,25 @@ export interface Company {
   operatingHoursNote?: string;
   /** Restrictions set by the Super Admin. */
   restrictions: { maxCourts?: number | null; maxBranches?: number | null; bookingsDisabled?: boolean };
-  subscription: { plan: string; status: 'trial' | 'active' | 'pastDue' | 'cancelled'; renewsAt?: Ts | null };
+  subscription: {
+    plan: string;
+    status: 'trial' | 'active' | 'pastDue' | 'cancelled';
+    renewsAt?: Ts | null;
+    /** Paid CourtSync licences per plan, one per court. Set by the Super Admin. */
+    licences?: SubscriptionLicences;
+  };
   stats: { courts: number; customers: number; bookings: number; completedBookings: number; branches: number };
   /** Lowercase search tokens built by functions. */
   searchTokens?: string[];
   createdAt?: Ts;
   createdBy?: string;
   updatedAt?: Ts;
+}
+
+/** Number of paid licences the company holds for each CourtSync plan. */
+export interface SubscriptionLicences {
+  racket: number;
+  team: number;
 }
 
 /** companies/{cid}/private/profile - visible to company staff and Super Admins only. */
