@@ -87,3 +87,5 @@ Then, as Super Admin, enable the matching payment methods (Master data > Payment
 ## Feature flags
 
 Platform feature flags (Super Admin > Platform settings) switch features on or off for every company: phone and Google sign-in, public court calendars, memberships, credits, identity verification, and sandbox payments. Company-level options live in each company's settings.
+
+Phone sign-in is currently hidden from the sign-in and register pages. To bring it back, set `VITE_ENABLE_PHONE_SIGN_IN=true` in the web env file, rebuild, and keep the "Phone number sign-in" platform flag on.

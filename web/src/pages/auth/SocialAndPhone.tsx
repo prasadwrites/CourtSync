@@ -4,6 +4,20 @@ import { Phone } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { errorMessage } from '@/lib/api';
 import { Button, Input, Alert } from '@/components/ui';
+import { useFeatures } from '@/lib/master';
+
+/**
+ * Phone sign-in is hidden for now. The code below stays so it can come back:
+ * set VITE_ENABLE_PHONE_SIGN_IN=true at build time and keep the "Phone number sign-in"
+ * platform flag on (Super Admin > Platform settings).
+ */
+export const PHONE_SIGN_IN_BUILD_ENABLED = import.meta.env.VITE_ENABLE_PHONE_SIGN_IN === 'true';
+
+/** True when the sign-in and register pages should offer phone sign-in. */
+export function usePhoneSignInEnabled(): boolean {
+  const features = useFeatures();
+  return PHONE_SIGN_IN_BUILD_ENABLED && features.phoneSignIn;
+}
 
 export function GoogleButton({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
