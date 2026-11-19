@@ -7,8 +7,9 @@ import { useAsync } from '@/lib/hooks';
 import { getAvailability } from '@/lib/booking';
 import { formatMinutes, formatMoney, todayISO } from '@/lib/format';
 import { Logo } from '@/components/Logo';
-import { Badge, Card, ErrorState, LinkButton, Spinner } from '@/components/ui';
+import { Badge, Card, ErrorState, LinkButton, Spinner, Tabs } from '@/components/ui';
 import { DateStrip } from '@/components/DateStrip';
+import { WeekSlotGrid } from '@/components/WeekSlotGrid';
 
 const DAYS = 14;
 
@@ -20,6 +21,7 @@ export default function PublicCalendar() {
   const end = DateTime.fromISO(start).plus({ days: DAYS - 1 }).toISODate()!;
   const avail = useAsync(() => getAvailability(companyId, courtId, start, end), [companyId, courtId, start, !!user]);
   const [date, setDate] = useState(start);
+  const [view, setView] = useState<'week' | 'day'>('week');
   const free = useMemo(() => {
     const m = new Map((avail.data?.days ?? []).map((d) => [d.date, d.slots.filter((s) => s.state === 'available' || s.state === 'limited').length]));
     return (d: string) => m.get(d) ?? 0;
@@ -48,23 +50,30 @@ export default function PublicCalendar() {
                 {court.pricing && <p className="mt-1 text-sm text-slate-600">{court.bookingModel === 'session' ? `${formatMoney(court.pricing.sessionPrice, company.currency)} per session` : `From ${formatMoney(court.pricing.basePrice, company.currency)} per hour${court.bookingModel === 'shared' ? ' per person' : ''}`}</p>}
               </div>
               {court.photoUrls.length > 0 && <div className="flex gap-2 overflow-x-auto">{court.photoUrls.map((u) => <img key={u} src={u} alt="" className="h-32 rounded-lg object-cover" />)}</div>}
-              <Card><DateStrip dates={days.map((d) => d.date)} value={date} onChange={setDate} freeCount={free} /></Card>
-              <Card>
-                <p className="mb-3 font-medium">{DateTime.fromISO(date).toFormat('cccc, d LLLL')}</p>
-                {!day || day.slots.filter((s) => s.state !== 'closed').length === 0 ? <p className="text-sm text-slate-500">Closed.</p> : (
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                    {day.slots.filter((s) => s.state !== 'closed').map((s) => {
-                      const open = s.state === 'available' || s.state === 'limited';
-                      return (
-                        <div key={s.startMin} className={clsx('rounded-lg border px-2 py-2 text-center text-sm', open ? 'border-court-500/40 bg-white' : 'border-slate-200 bg-slate-100 text-slate-400')}>
-                          <span className="block font-medium">{formatMinutes(s.startMin)}</span>
-                          <span className="block text-[11px]">{open ? (s.price !== undefined ? formatMoney(s.price, company.currency) : court.bookingModel === 'shared' ? `${s.remaining} left` : 'Free') : s.state === 'past' ? '—' : 'Booked'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </Card>
+              <Tabs<'week' | 'day'> value={view} onChange={setView} tabs={[{ value: 'week', label: 'Week' }, { value: 'day', label: 'Day' }]} />
+              {view === 'week' ? (
+                <Card><WeekSlotGrid days={days} focusDate={date} bookingModel={court.bookingModel} currency={company.currency} /></Card>
+              ) : (
+                <>
+                  <Card><DateStrip dates={days.map((d) => d.date)} value={date} onChange={setDate} freeCount={free} /></Card>
+                  <Card>
+                    <p className="mb-3 font-medium">{DateTime.fromISO(date).toFormat('cccc, d LLLL')}</p>
+                    {!day || day.slots.filter((s) => s.state !== 'closed').length === 0 ? <p className="text-sm text-slate-500">Closed.</p> : (
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                        {day.slots.filter((s) => s.state !== 'closed').map((s) => {
+                          const open = s.state === 'available' || s.state === 'limited';
+                          return (
+                            <div key={s.startMin} className={clsx('rounded-lg border px-2 py-2 text-center text-sm', open ? 'border-court-500/40 bg-white' : 'border-slate-200 bg-slate-100 text-slate-400')}>
+                              <span className="block font-medium">{formatMinutes(s.startMin)}</span>
+                              <span className="block text-[11px]">{open ? (s.price !== undefined ? formatMoney(s.price, company.currency) : court.bookingModel === 'shared' ? `${s.remaining} left` : 'Free') : s.state === 'past' ? '—' : 'Booked'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </Card>
+                </>
+              )}
               <Card className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-slate-600">{user ? 'Pick a time and book in a few taps.' : 'Create a free account or sign in to book.'}</p>
                 {user ? <LinkButton to={bookPath}>Book now</LinkButton> : (

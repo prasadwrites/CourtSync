@@ -21,7 +21,7 @@ export default function Calendar() {
   const { companyId, company, courts, branches, can } = useCompany();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  const view = (params.get('view') as View) || 'day';
+  const view = (params.get('view') as View) || 'week';
   const date = params.get('date') || todayISO(company.timezone);
   const [branchId, setBranchId] = useState(params.get('branch') || '');
   const activeCourts = courts.filter((c) => c.status !== 'inactive' && (!branchId || c.branchId === branchId));

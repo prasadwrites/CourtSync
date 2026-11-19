@@ -45,7 +45,7 @@ export function durationsFrom(court: SlotCourt, slots: AvailSlot[], start: numbe
   return out;
 }
 
-const stateClass: Record<string, string> = {
+export const slotStateClass: Record<string, string> = {
   available: 'border-court-500/40 bg-white text-slate-900 hover:border-court-600 hover:bg-court-50',
   limited: 'border-amber-300 bg-amber-50 text-amber-900 hover:border-amber-500',
   full: 'border-slate-200 bg-slate-100 text-slate-400 line-through',
@@ -62,15 +62,6 @@ export function SlotPicker({
   court, slots, units, value, onChange, currency,
 }: { court: SlotCourt; slots: AvailSlot[]; units: number; value: SlotSelection | null; onChange: (v: SlotSelection | null) => void; currency?: string }) {
   const visible = slots.filter((s) => s.state !== 'closed');
-  const durations = useMemo(() => (value ? durationsFrom(court, slots, value.startMin, units) : []), [court, slots, value, units]);
-
-  // Drop the selection if it no longer fits (participants changed, or availability refreshed).
-  useEffect(() => {
-    if (!value) return;
-    const fits = durationsFrom(court, slots, value.startMin, units).some((d) => d.minutes === value.endMin - value.startMin);
-    if (!fits) onChange(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slots, units]);
 
   if (visible.length === 0) return <p className="rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-500">Closed on this day.</p>;
 
@@ -92,7 +83,7 @@ export function SlotPicker({
                 }}
                 className={clsx(
                   'rounded-lg border px-2 py-2 text-center text-sm transition disabled:cursor-not-allowed',
-                  selected ? 'border-brand-700 bg-brand-700 text-white' : stateClass[open ? s.state : s.state === 'available' || s.state === 'limited' ? 'full' : s.state],
+                  selected ? 'border-brand-700 bg-brand-700 text-white' : slotStateClass[open ? s.state : s.state === 'available' || s.state === 'limited' ? 'full' : s.state],
                 )}
                 aria-pressed={!!selected}
               >
@@ -110,32 +101,52 @@ export function SlotPicker({
           <Legend className="border-slate-200 bg-slate-100" label="Booked or unavailable" />
         </div>
       </div>
-      {value && court.bookingModel !== 'session' && durations.length > 0 && (
-        <div>
-          <p className="mb-1.5 text-sm font-medium text-slate-700">Duration</p>
-          <div className="flex flex-wrap gap-2">
-            {durations.map((d) => {
-              const active = value.endMin - value.startMin === d.minutes;
-              return (
-                <button
-                  key={d.minutes}
-                  type="button"
-                  onClick={() => onChange({ startMin: value.startMin, endMin: value.startMin + d.minutes, estimate: d.estimate })}
-                  className={clsx('rounded-full border px-3 py-1.5 text-sm', active ? 'border-brand-700 bg-brand-700 text-white' : 'border-slate-300 bg-white hover:bg-slate-50')}
-                >
-                  {fmtDuration(d.minutes)}
-                  {d.estimate !== undefined && currency && <span className="ml-1 opacity-80">· {formatMoney(d.estimate, currency)}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {value && <DurationPicker court={court} slots={slots} units={units} value={value} onChange={onChange} currency={currency} />}
     </div>
   );
 }
 
-function Legend({ className, label }: { className: string; label: string }) {
+/** Drop the selection if it no longer fits (participants changed, or availability refreshed). */
+export function useDropUnfit(court: SlotCourt, slots: AvailSlot[], units: number, value: SlotSelection | null, onChange: (v: SlotSelection | null) => void) {
+  useEffect(() => {
+    if (!value) return;
+    const fits = durationsFrom(court, slots, value.startMin, units).some((d) => d.minutes === value.endMin - value.startMin);
+    if (!fits) onChange(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slots, units]);
+}
+
+/** Duration chips for a chosen start slot. Session courts have a fixed length, so none show. */
+export function DurationPicker({
+  court, slots, units, value, onChange, currency,
+}: { court: SlotCourt; slots: AvailSlot[]; units: number; value: SlotSelection; onChange: (v: SlotSelection | null) => void; currency?: string }) {
+  const durations = useMemo(() => durationsFrom(court, slots, value.startMin, units), [court, slots, value, units]);
+  useDropUnfit(court, slots, units, value, onChange);
+  if (court.bookingModel === 'session' || durations.length === 0) return null;
+  return (
+    <div>
+      <p className="mb-1.5 text-sm font-medium text-slate-700">Duration</p>
+      <div className="flex flex-wrap gap-2">
+        {durations.map((d) => {
+          const active = value.endMin - value.startMin === d.minutes;
+          return (
+            <button
+              key={d.minutes}
+              type="button"
+              onClick={() => onChange({ startMin: value.startMin, endMin: value.startMin + d.minutes, estimate: d.estimate })}
+              className={clsx('rounded-full border px-3 py-1.5 text-sm', active ? 'border-brand-700 bg-brand-700 text-white' : 'border-slate-300 bg-white hover:bg-slate-50')}
+            >
+              {fmtDuration(d.minutes)}
+              {d.estimate !== undefined && currency && <span className="ml-1 opacity-80">· {formatMoney(d.estimate, currency)}</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function Legend({ className, label }: { className: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
       <span className={clsx('h-3 w-3 rounded border', className)} />
