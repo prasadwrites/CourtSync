@@ -6,7 +6,7 @@ import { errorMessage } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { Button, Input, Alert, Tabs } from '@/components/ui';
 import { AuthLayout } from './AuthLayout';
-import { GoogleButton, PhoneSignIn } from './SocialAndPhone';
+import { GoogleButton, PhoneSignIn, usePhoneSignInEnabled } from './SocialAndPhone';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,6 +18,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const done = () => navigate(next, { replace: true });
+  const phoneEnabled = usePhoneSignInEnabled();
   const { user, loading } = useSession();
 
   // Already signed in (or the sign-in call never reported back, as with some popup setups): move on.
@@ -36,8 +37,8 @@ export default function Login() {
         </>
       }
     >
-      <Tabs value={mode} onChange={setMode} tabs={[{ value: 'email', label: 'Email' }, { value: 'phone', label: 'Phone' }]} />
-      {mode === 'email' ? (
+      {phoneEnabled && <Tabs value={mode} onChange={setMode} tabs={[{ value: 'email', label: 'Email' }, { value: 'phone', label: 'Phone' }]} />}
+      {mode === 'email' || !phoneEnabled ? (
         <form
           className="space-y-4"
           onSubmit={async (e) => {

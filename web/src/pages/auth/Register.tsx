@@ -5,7 +5,7 @@ import { auth } from '@/lib/firebase';
 import { call, errorMessage } from '@/lib/api';
 import { Button, Input, Alert, Tabs, Checkbox } from '@/components/ui';
 import { AuthLayout } from './AuthLayout';
-import { GoogleButton, PhoneSignIn } from './SocialAndPhone';
+import { GoogleButton, PhoneSignIn, usePhoneSignInEnabled } from './SocialAndPhone';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -19,11 +19,12 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const done = () => navigate(next, { replace: true });
+  const phoneEnabled = usePhoneSignInEnabled();
 
   return (
     <AuthLayout title="Create your CourtSync account" subtitle="Book courts, join memberships and keep your credits in one place." footer={<>Already have an account? <Link to="/login" state={location.state} className="font-medium text-brand-700">Sign in</Link></>}>
-      <Tabs value={mode} onChange={setMode} tabs={[{ value: 'email', label: 'Email' }, { value: 'phone', label: 'Phone' }]} />
-      {mode === 'email' ? (
+      {phoneEnabled && <Tabs value={mode} onChange={setMode} tabs={[{ value: 'email', label: 'Email' }, { value: 'phone', label: 'Phone' }]} />}
+      {mode === 'email' || !phoneEnabled ? (
         <form
           className="space-y-4"
           onSubmit={async (e) => {
