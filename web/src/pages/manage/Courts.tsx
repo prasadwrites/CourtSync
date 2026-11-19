@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CalendarDays, ExternalLink, Plus } from 'lucide-react';
-import { BOOKING_MODEL_LABELS } from '@courtsync/shared';
+import { CalendarDays, Copy, ExternalLink, Plus } from 'lucide-react';
+import { BOOKING_MODEL_LABELS, type Court } from '@courtsync/shared';
 import { formatMoney } from '@/lib/format';
-import { Badge, Card, DataTable, LinkButton, PageHeader } from '@/components/ui';
+import { call, errorMessage } from '@/lib/api';
+import { useToast } from '@/lib/toast';
+import { Badge, Card, ConfirmDialog, DataTable, LinkButton, PageHeader } from '@/components/ui';
 import { useCompany } from './context';
 
 export default function Courts() {
@@ -10,6 +13,26 @@ export default function Courts() {
   const navigate = useNavigate();
   const max = company.restrictions?.maxCourts;
   const atLimit = max != null && courts.filter((c) => c.status !== 'inactive').length >= max;
+  // The server counts every court, inactive ones included, toward the plan limit.
+  const canClone = max == null || courts.length < max;
+  const toast = useToast();
+  const [cloning, setCloning] = useState<(Court & { id: string }) | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const clone = async () => {
+    if (!cloning) return;
+    setBusy(true);
+    try {
+      const r = await call<{ courtId: string; name: string }>('cloneCourt', { companyId, courtId: cloning.id });
+      toast.success(`Created ${r.name}. Rename it and set it to Active when it's ready.`);
+      setCloning(null);
+      navigate(`/manage/${companyId}/courts/${r.courtId}`);
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <>
       <PageHeader
@@ -30,11 +53,33 @@ export default function Courts() {
             { key: 'model', header: 'Booking', render: (c) => BOOKING_MODEL_LABELS[c.bookingModel], hideOnMobile: true },
             { key: 'price', header: 'Price', render: (c) => (c.bookingModel === 'session' ? `${formatMoney(c.pricing.sessionPrice, company.currency)} / session` : `${formatMoney(c.pricing.basePrice, company.currency)} / h${c.bookingModel === 'shared' ? ' per person' : ''}`), hideOnMobile: true },
             { key: 'public', header: 'Public calendar', render: (c) => (c.publicCalendar?.enabled ? <a className="inline-flex items-center gap-1 text-brand-700" href={`/p/${companyId}/${c.id}`} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Open <ExternalLink className="h-3.5 w-3.5" /></a> : <span className="text-slate-400">Off</span>), hideOnMobile: true },
-            { key: 'edit', header: '', render: (c) => <Link className="text-brand-700" to={`/manage/${companyId}/courts/${c.id}`} onClick={(e) => e.stopPropagation()}>Edit</Link> },
+            {
+              key: 'edit',
+              header: '',
+              render: (c) => (
+                <span className="inline-flex items-center gap-3">
+                  <Link className="text-brand-700" to={`/manage/${companyId}/courts/${c.id}`} onClick={(e) => e.stopPropagation()}>Edit</Link>
+                  {canClone && (
+                    <button type="button" className="inline-flex items-center gap-1 text-brand-700" aria-label={`Clone ${c.name}`} onClick={(e) => { e.stopPropagation(); setCloning(c); }}>
+                      <Copy className="h-3.5 w-3.5" /> Clone
+                    </button>
+                  )}
+                </span>
+              ),
+            },
             { key: 'status', header: 'Status', render: (c) => <Badge tone={c.status === 'active' ? 'green' : c.status === 'temporarilyClosed' ? 'amber' : 'slate'}>{c.status === 'temporarilyClosed' ? 'Temporarily closed' : c.status === 'active' ? 'Active' : 'Inactive'}</Badge> },
           ]}
         />
       </Card>
+      <ConfirmDialog
+        open={!!cloning}
+        onClose={() => !busy && setCloning(null)}
+        onConfirm={clone}
+        loading={busy}
+        title="Clone court"
+        confirmLabel="Clone court"
+        message={cloning && <>This adds a copy of <strong>{cloning.name}</strong>, named with “(Copy)” at the end, with the same sport, branch, prices, hours, sessions, booking rules and photos. Bookings and closures are not copied. The copy starts as Inactive, so you can rename it and switch it on when it's ready.</>}
+      />
     </>
   );
 }

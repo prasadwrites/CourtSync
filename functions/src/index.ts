@@ -12,7 +12,7 @@ export { createCompany, setCompanyStatus, updateCompanyRestrictions } from './pl
 
 // Company administration
 export { addStaff, updateStaff } from './company/staff';
-export { upsertBranch, upsertCourt } from './company/facility';
+export { upsertBranch, upsertCourt, cloneCourt } from './company/facility';
 export { joinCompany, createCustomer, inviteCustomer, updateCustomer } from './company/customers';
 
 // Booking engine

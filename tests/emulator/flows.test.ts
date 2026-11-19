@@ -80,6 +80,41 @@ describe('courts', () => {
     await expectCode(ownerB.call('upsertCourt', { companyId: companyA, courtId: courtA, court: courtInput('main') }), 'permission-denied');
   });
 
+  it('clones a court with its settings but not its bookings, within plan limits', async () => {
+    const companyDoc = admin.db.doc(`companies/${companyA}`);
+    const before = ((await companyDoc.get()).get('stats.courts') as number) ?? 0;
+    await expectCode(ownerB.call('cloneCourt', { companyId: companyA, courtId: courtA }), 'permission-denied');
+    await expectCode(alice.call('cloneCourt', { companyId: companyA, courtId: courtA }), 'permission-denied');
+
+    const first = await ownerA.call('cloneCourt', { companyId: companyA, courtId: courtA });
+    const second = await ownerA.call('cloneCourt', { companyId: companyA, courtId: courtA });
+    const source = (await admin.db.doc(`companies/${companyA}/courts/${courtA}`).get()).data()!;
+    const copy = (await admin.db.doc(`companies/${companyA}/courts/${first.courtId}`).get()).data()!;
+    expect(copy.name).toBe(`${source.name} (Copy)`);
+    expect(second.name).toBe(`${source.name} (Copy 2)`);
+    expect(copy.status).toBe('inactive');
+    expect(copy.pricing).toEqual(source.pricing);
+    expect(copy.operatingHours).toEqual(source.operatingHours);
+    expect(copy.sportId).toBe(source.sportId);
+    expect(copy.branchId).toBe(source.branchId);
+    expect((await admin.db.collection(`companies/${companyA}/bookings`).where('courtId', '==', first.courtId).get()).size).toBe(0);
+    expect((await companyDoc.get()).get('stats.courts')).toBe(before + 2);
+    const logs = await admin.db.collection('auditLogs').where('action', '==', 'court.clone').get();
+    expect(logs.size).toBe(2);
+
+    // The copy is a normal court: it can be renamed through the usual edit flow.
+    await ownerA.call('upsertCourt', { companyId: companyA, courtId: first.courtId, court: courtInput(source.branchId, 'badminton', { name: 'Court 2' }) });
+    expect((await admin.db.doc(`companies/${companyA}/courts/${first.courtId}`).get()).get('name')).toBe('Court 2');
+
+    await companyDoc.update({ 'restrictions.maxCourts': before + 2 });
+    await expectCode(ownerA.call('cloneCourt', { companyId: companyA, courtId: courtA }), 'failed-precondition');
+
+    // Leave company A with one court for the tests that follow.
+    await companyDoc.update({ 'restrictions.maxCourts': null, 'stats.courts': before });
+    await admin.db.doc(`companies/${companyA}/courts/${first.courtId}`).delete();
+    await admin.db.doc(`companies/${companyA}/courts/${second.courtId}`).delete();
+  });
+
   it('serves the public calendar without pricing when hidden', async () => {
     const res = await alice.call('getAvailability', { companyId: companyA, courtId: courtA, startDate: date, endDate: date });
     expect(res.days[0].slots.length).toBe(48);
