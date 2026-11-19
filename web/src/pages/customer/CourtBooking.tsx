@@ -12,9 +12,10 @@ import { call, errorMessage } from '@/lib/api';
 import { useToast } from '@/lib/toast';
 import { getAvailability, unitsFor, type CreateBookingResult, type StartPaymentResult } from '@/lib/booking';
 import { formatMoney, todayISO, timeRange } from '@/lib/format';
-import { Alert, Badge, Button, Card, CardHeader, ErrorState, Input, PageHeader, Spinner, Textarea } from '@/components/ui';
+import { Alert, Badge, Button, Card, CardHeader, ErrorState, Input, PageHeader, Spinner, Tabs, Textarea } from '@/components/ui';
 import { DateStrip } from '@/components/DateStrip';
-import { SlotPicker, type SlotSelection } from '@/components/SlotPicker';
+import { DurationPicker, SlotPicker, durationsFrom, type SlotSelection } from '@/components/SlotPicker';
+import { WeekSlotGrid } from '@/components/WeekSlotGrid';
 import { PaymentDialog } from '@/components/PaymentDialog';
 
 const DAYS = 14;
@@ -31,6 +32,7 @@ export default function CourtBooking() {
   const end = DateTime.fromISO(start).plus({ days: DAYS - 1 }).toISODate()!;
   const avail = useAsync(() => getAvailability(companyId, courtId, start, end), [companyId, courtId, start]);
   const [date, setDate] = useState(start);
+  const [view, setView] = useState<'week' | 'day'>('week');
   const [participants, setParticipants] = useState(1);
   const [slot, setSlot] = useState<SlotSelection | null>(null);
   const [credits, setCredits] = useState(0);
@@ -102,18 +104,45 @@ export default function CourtBooking() {
       {court.status === 'temporarilyClosed' && <Alert tone="warning">This court is temporarily closed.</Alert>}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <Card>
-            <DateStrip dates={avail.data.days.map((d) => d.date)} value={date} onChange={(d) => { setDate(d); setSlot(null); }} freeCount={freeCount} />
-          </Card>
-          <Card>
-            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-              <p className="font-medium">{DateTime.fromISO(date).toFormat('cccc, d LLLL')}</p>
+          <Tabs<'week' | 'day'> value={view} onChange={setView} tabs={[{ value: 'week', label: 'Week' }, { value: 'day', label: 'Day' }]} />
+          {view === 'week' ? (
+            <Card className="space-y-4">
               {court.maxParticipants > 1 && (
-                <Input type="number" label={court.bookingModel === 'shared' ? 'People' : 'Players'} className="w-24" min={1} max={court.maxParticipants} value={participants} onChange={(e) => setParticipants(Math.min(court.maxParticipants, Math.max(1, Number(e.target.value) || 1)))} />
+                <div className="w-28"><Input type="number" label={court.bookingModel === 'shared' ? 'People' : 'Players'} className="w-24" min={1} max={court.maxParticipants} value={participants} onChange={(e) => setParticipants(Math.min(court.maxParticipants, Math.max(1, Number(e.target.value) || 1)))} /></div>
               )}
-            </div>
-            {day ? <SlotPicker court={court} slots={day.slots} units={units} value={slot} onChange={setSlot} currency={company.currency} /> : <p className="text-sm text-slate-500">No availability.</p>}
-          </Card>
+              <WeekSlotGrid
+                days={avail.data.days}
+                focusDate={date}
+                bookingModel={court.bookingModel}
+                units={units}
+                currency={company.currency}
+                value={slot ? { date, startMin: slot.startMin, endMin: slot.endMin } : null}
+                onPick={(d, s) => {
+                  const slots = avail.data!.days.find((x) => x.date === d)?.slots ?? [];
+                  const options = durationsFrom(court, slots, s.startMin, units);
+                  if (!options.length) return;
+                  setDate(d);
+                  setSlot({ startMin: s.startMin, endMin: s.startMin + options[0].minutes, estimate: options[0].estimate });
+                }}
+              />
+              {slot && day && <DurationPicker court={court} slots={day.slots} units={units} value={slot} onChange={setSlot} currency={company.currency} />}
+            </Card>
+          ) : (
+            <>
+            <Card>
+              <DateStrip dates={avail.data.days.map((d) => d.date)} value={date} onChange={(d) => { setDate(d); setSlot(null); }} freeCount={freeCount} />
+            </Card>
+            <Card>
+              <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                <p className="font-medium">{DateTime.fromISO(date).toFormat('cccc, d LLLL')}</p>
+                {court.maxParticipants > 1 && (
+                  <Input type="number" label={court.bookingModel === 'shared' ? 'People' : 'Players'} className="w-24" min={1} max={court.maxParticipants} value={participants} onChange={(e) => setParticipants(Math.min(court.maxParticipants, Math.max(1, Number(e.target.value) || 1)))} />
+                )}
+              </div>
+              {day ? <SlotPicker court={court} slots={day.slots} units={units} value={slot} onChange={setSlot} currency={company.currency} /> : <p className="text-sm text-slate-500">No availability.</p>}
+            </Card>
+            </>
+          )}
           {(court.description || court.amenities.length > 0) && (
             <Card>
               <CardHeader title="About this court" />
