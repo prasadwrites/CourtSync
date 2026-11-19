@@ -64,9 +64,10 @@ export default function CourtEditor() {
     }
     setSaving(true);
     try {
-      const r = await call<{ courtId: string }>('upsertCourt', { companyId, courtId, court: parsed.data });
+      await call('upsertCourt', { companyId, courtId, court: parsed.data });
       toast.success('Court saved');
-      if (!courtId) navigate(`/manage/${companyId}/courts/${r.courtId}`, { replace: true });
+      // Saving a new or existing court always returns to the Courts list.
+      navigate(`/manage/${companyId}/courts`, { replace: !courtId });
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
