@@ -107,3 +107,72 @@ export const upsertCourt = callable(
     return { courtId: id };
   },
 );
+
+/** Builds "<name> (Copy)", or "(Copy 2)", "(Copy 3)" … when that name is already taken. */
+export function copyName(name: string, taken: Set<string>): string {
+  const base = name.replace(/ \(Copy(?: \d+)?\)$/, '');
+  for (let n = 1; ; n++) {
+    const suffix = n === 1 ? ' (Copy)' : ` (Copy ${n})`;
+    const candidate = `${base.slice(0, 200 - suffix.length).trimEnd()}${suffix}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+}
+
+/**
+ * Duplicates a court's settings (sport, branch, pricing, hours, sessions, rules, photos and
+ * public-calendar options) into a new court. Bookings, slot locks and closures stay with the
+ * original. The copy starts inactive so customers don't see it until it has been renamed
+ * and switched on in the normal edit flow.
+ */
+export const cloneCourt = callable(
+  'cloneCourt',
+  z.object({ companyId: z.string().regex(idRe), courtId: z.string().regex(idRe) }),
+  async ({ companyId, courtId }, caller) => {
+    const ctx = await requireStaff(caller, companyId, 'courts.manage');
+    const companyRef = refs.company(companyId);
+    const sourceSnap = await refs.court(companyId, courtId).get();
+    if (!sourceSnap.exists) throw fail.notFound('Court');
+    const source = sourceSnap.data() as Court;
+    assertBranchAccess(ctx, source.branchId);
+    if (!ctx.company.allowedSportIds.includes(source.sportId)) {
+      throw fail.denied('Your company is not permitted to create courts for this sport. Contact CourtSync.');
+    }
+    const sport = (await db.collection('sports').doc(source.sportId).get()).data() as Sport | undefined;
+    if (!sport?.enabled) throw fail.invalid('That sport is not available.');
+
+    const existing = await companyRef.collection('courts').select('name').get();
+    const taken = new Set(existing.docs.map((d) => String(d.get('name') ?? '').toLowerCase()));
+    // Re-validate through the court schema so only court settings are copied, never
+    // ids, timestamps or any other fields stored on the document.
+    const parsed = courtSchema.safeParse({ ...source, name: copyName(source.name, taken), status: 'inactive', statusNote: null });
+    if (!parsed.success) throw fail.invalid('This court has settings that need fixing before it can be cloned. Open it, save it, and try again.');
+    const court = parsed.data;
+
+    const id = await db.runTransaction(async (tx) => {
+      const companySnap = await tx.get(companyRef);
+      const max = ctx.company.restrictions?.maxCourts;
+      if (max != null && ((companySnap.get('stats.courts') as number | undefined) ?? 0) >= max) {
+        throw fail.precondition(`Your plan allows ${max} courts. Contact CourtSync to raise the limit.`);
+      }
+      const ref = companyRef.collection('courts').doc();
+      tx.set(ref, { ...court, createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() });
+      tx.update(companyRef, { 'stats.courts': FieldValue.increment(1) });
+      bumpPlatform({ courts: 1 }, tx);
+      await audit(
+        {
+          actorUid: caller.uid,
+          actorEmail: caller.email,
+          action: 'court.clone',
+          targetType: 'court',
+          targetId: ref.id,
+          companyId,
+          before: { courtId, name: source.name },
+          after: { name: court.name, status: court.status, pricing: court.pricing, bookingModel: court.bookingModel },
+        },
+        tx,
+      );
+      return ref.id;
+    });
+    return { courtId: id, name: court.name };
+  },
+);
